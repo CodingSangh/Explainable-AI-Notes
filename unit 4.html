@@ -1,0 +1,1312 @@
+<html>
+
+<head>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+  <h1 id="unit-iv-explanation-techniques-for-deep-learning">Unit IV: Explanation Techniques for Deep Learning</h1>
+  <hr>
+  <h2 id="topic-1-gradient-based-methods-saliency-maps-">Topic 1: Gradient-based Methods (Saliency Maps)</h2>
+  <hr>
+  <h3 id="1-introduction-opening-the-black-box">1. Introduction: Opening the Black Box</h3>
+  <p>Model-Agnostic tools (LIME/SHAP) work by perturbing inputs thousands of times. This is <strong>slow</strong> for
+    deep learning.</p>
+  <ul>
+    <li><strong>The Alternative:</strong> Deep Neural Networks are differentiable. We can calculate the
+      <strong>Gradient</strong> (derivative) of the output with respect to the input.</li>
+    <li><strong>The Intuition:</strong> The gradient tells us: <em>&quot;If I change pixel $(i, j)$ slightly, how much
+        does the prediction change?&quot;</em>
+      <ul>
+        <li>High Gradient = Important Pixel.</li>
+        <li>Zero Gradient = Irrelevant Pixel (Background).</li>
+      </ul>
+    </li>
+  </ul>
+  <hr>
+  <h3 id="2-saliency-maps-vanilla-gradients-">2. Saliency Maps (Vanilla Gradients)</h3>
+  <p>The simplest technique, introduced by Simonyan et al. (2013).</p>
+  <h4 id="a-the-math">A. The Math</h4>
+  <p>Given an image $I$ and a class score $S_c(I)$ (e.g., score for &quot;Elephant&quot;), the Saliency Map $M$ is
+    simply the absolute value of the gradient:</p>
+  <p>$$M = \left| \frac{\partial S_c}{\partial I} \right|$$</p>
+  <ul>
+    <li><strong>Backward Pass:</strong> We run the network normally (Forward Pass) to get the score. Then we
+      backpropagate the signal <strong>all the way to the input image</strong> to see which pixels &quot;excited&quot;
+      the neurons the most.</li>
+  </ul>
+  <h4 id="b-visualization">B. Visualization</h4>
+  <p>A Saliency Map looks like a noisy, heatmap version of the original image.</p>
+  <svg width="100%" height="300" xmlns="http://www.w3.org/2000/svg"
+    style="background:#fff; border: 1px solid #ddd; border-radius: 8px;">
+    <text x="300" y="30" text-anchor="middle" font-weight="bold">Saliency Map Generation</text>
+
+    <rect x="50" y="80" width="120" height="120" fill="#eee" stroke="#333" />
+    <circle cx="110" cy="140" r="30" fill="#333" /> <text x="110" y="220" text-anchor="middle" font-size="12">Input
+      Image (Dog)</text>
+
+    <polygon points="200,100 200,180 350,150 350,130" fill="#e3f2fd" stroke="#2196f3" />
+    <text x="275" y="145" text-anchor="middle" font-size="10">CNN (Black Box)</text>
+
+    <line x1="350" y1="110" x2="170" y2="110" stroke="#e74c3c" stroke-width="3" marker-end="url(#arrowRed)" />
+    <text x="260" y="100" text-anchor="middle" font-size="10" fill="#e74c3c">Backprop Gradient</text>
+
+    <rect x="430" y="80" width="120" height="120" fill="#000" stroke="#333" />
+    <circle cx="490" cy="140" r="30" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="2,2" />
+    <circle cx="480" cy="130" r="2" fill="#fff" />
+    <circle cx="500" cy="135" r="2" fill="#fff" />
+    <circle cx="490" cy="150" r="2" fill="#fff" />
+    <text x="490" y="220" text-anchor="middle" font-size="12">Saliency Map</text>
+
+    <text x="490" y="240" text-anchor="middle" font-size="10" font-style="italic">&quot;White dots = Important
+      Pixels&quot;</text>
+
+    <defs>
+      <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto"
+        markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#e74c3c" />
+      </marker>
+    </defs>
+  </svg>
+
+  <hr>
+  <h3 id="3-the-problem-with-vanilla-gradients-noise-">3. The Problem with Vanilla Gradients (Noise)</h3>
+  <p>While fast, raw gradients are often <strong>visually noisy</strong>.</p>
+  <ol>
+    <li><strong>Shattered Gradients:</strong> In deep networks (like ResNet-101), the gradient signal fluctuates wildly
+      (like static on a TV).</li>
+    <li><strong>Saturation:</strong> If a neuron is fully active (ReLU output is high), slight changes to input might
+      not change the output much (Zero Gradient), even though the pixel is important.</li>
+  </ol>
+  <p><strong>Solution:</strong> We need advanced methods to smooth this out (Integrated Gradients, SmoothGrad).</p>
+  <hr>
+  <h3 id="4-integrated-gradients-ig-">4. Integrated Gradients (IG)</h3>
+  <p><strong>Integrated Gradients</strong> is the &quot;Axiomatic&quot; version of gradient attribution (similar to how
+    SHAP is the axiomatic version of perturbation). It solves the Saturation problem.</p>
+  <h4 id="a-the-concept">A. The Concept</h4>
+  <p>Instead of looking at the gradient at <em>one point</em> (the final image), IG calculates the gradient at
+    <strong>multiple steps</strong> along a path from a &quot;Baseline&quot; (Black Image) to the &quot;Input&quot;
+    (Real Image).</p>
+  <h4 id="b-the-formula">B. The Formula</h4>
+  <p>$$IG_i(x) = (x_i - x'_i) \times \int_{\alpha=0}^{1} \frac{\partial F(x' + \alpha(x - x'))}{\partial x_i} d\alpha$$</p>
+  <ul>
+    <li><strong>Plain English:</strong>
+      <ol>
+        <li>Start with a black image.</li>
+        <li>Slowly fade in the real image (10% opacity, 20% opacity...).</li>
+        <li>Calculate gradients at every step.</li>
+        <li>Average them all together.</li>
+      </ol>
+    </li>
+    <li><strong>Result:</strong> A much cleaner, sharper heatmap than vanilla gradients.</li>
+  </ul>
+  <hr>
+  <h3 id="5-smoothgrad">5. SmoothGrad</h3>
+  <p>Another simple technique to reduce noise.</p>
+  <ul>
+    <li><strong>Idea:</strong> Take the input image, add random noise to it 50 times. Calculate the Saliency Map for
+      each noisy version. Average them.</li>
+    <li><strong>Result:</strong> The &quot;static noise&quot; cancels out, leaving only the robust features.</li>
+  </ul>
+  <hr>
+  <h3 id="6-exam-question-bank">6. Exam Question Bank</h3>
+  <p><strong>Q1 (Short - 2 Marks): What does a pixel with zero gradient in a Saliency Map indicate?</strong></p>
+  <blockquote>
+    <p><strong>Ans:</strong> It indicates that the model is locally insensitive to that pixel. Changing that pixel
+      slightly will not affect the model&#39;s prediction score.</p>
+  </blockquote>
+  <p><strong>Q2 (5 Marks): Compare Saliency Maps (Gradient-based) with LIME (Perturbation-based).</strong></p>
+  <blockquote>
+    <p><strong>Hint:</strong></p>
+    <ul>
+      <li><strong>Speed:</strong> Saliency is instant (1 backprop). LIME is slow (thousands of forward passes).</li>
+      <li><strong>Access:</strong> Saliency requires White-box access (must access gradients). LIME is Model-agnostic
+        (works on Black-box).</li>
+      <li><strong>Resolution:</strong> Saliency gives pixel-level detail. LIME gives super-pixel (patch) detail.</li>
+    </ul>
+  </blockquote>
+  <p><strong>Q3 (10 Marks): Explain the &quot;Gradient Saturation&quot; problem and how Integrated Gradients solves
+      it.</strong></p>
+  <blockquote>
+    <p><strong>Structure:</strong></p>
+    <ol>
+      <li><strong>Saturation:</strong> Explain that in Deep Nets, a neuron can &quot;max out.&quot; Increasing input
+        further doesn&#39;t change output $\to$ Gradient becomes Zero $\to$ Feature looks irrelevant (False Negative).
+      </li>
+      <li><strong>Solution (IG):</strong> IG doesn&#39;t just look at the end state. It looks at the <em>path</em> from
+        baseline (0) to input (x). Even if the gradient is zero at the end, it was positive <em>during</em> the path.
+      </li>
+      <li><strong>Integral:</strong> The integral sums up these contributions, recovering the true importance.</li>
+    </ol>
+  </blockquote>
+  <hr>
+  <h2 id="topic-2-grad-cam-gradient-weighted-class-activation-mapping-">Topic 2: Grad-CAM (Gradient-weighted Class
+    Activation Mapping)</h2>
+  <hr>
+  <h3 id="1-introduction-looking-at-layers-not-pixels">1. Introduction: Looking at Layers, Not Pixels</h3>
+  <p>Saliency Maps (Topic 1) are often noisy because they focus on pixels.
+    <strong>Grad-CAM</strong> focuses on the <strong>Last Convolutional Layer</strong> of the CNN.
+  </p>
+  <ul>
+    <li><strong>Why the Last Layer?</strong>
+      <ul>
+        <li>In a CNN, early layers detect edges/lines.</li>
+        <li>Middle layers detect textures/shapes.</li>
+        <li><strong>Deep layers</strong> detect semantic objects (e.g., &quot;Face,&quot; &quot;Wheel,&quot;
+          &quot;Ear&quot;).</li>
+      </ul>
+    </li>
+    <li><strong>The Insight:</strong> The last convolutional layer has the best compromise between high-level semantics
+      (It knows it&#39;s a &quot;Cat&quot;) and spatial information (It knows <em>where</em> the cat is).</li>
+  </ul>
+  <hr>
+  <h3 id="2-the-mechanism-how-it-works-">2. The Mechanism (How it Works)</h3>
+  <p>Grad-CAM uses the gradients flowing into the final convolutional layer to produce a coarse localization map
+    highlighting the important regions in the image.</p>
+  <h4 id="step-by-step-algorithm-">Step-by-Step Algorithm:</h4>
+  <ol>
+    <li><strong>Forward Pass:</strong> Run the image through the CNN. Get the score for the target class (e.g.,
+      $y_{Tiger}$).</li>
+    <li><strong>Backward Pass:</strong> Calculate the gradient of this score with respect to the feature maps ($A^k$) of
+      the last convolutional layer.<ul>
+        <li>Gradients: $\frac{\partial y_{Tiger}}{\partial A^k}$</li>
+      </ul>
+    </li>
+    <li><strong>Global Average Pooling (GAP):</strong> Average these gradients to get a single &quot;Importance
+      Weight&quot; ($\alpha_k$) for each feature map.<ul>
+        <li><em>Intuition:</em> If Feature Map 5 detects &quot;Stripes&quot; and the gradient is high, then
+          &quot;Stripes&quot; are very important for &quot;Tiger.&quot;</li>
+      </ul>
+    </li>
+    <li><strong>Weighted Combination:</strong> Multiply each feature map by its weight and sum them up.</li>
+    <li><strong>ReLU:</strong> Apply ReLU to remove negative values (we only care about features that possess a
+      <em>positive</em> influence on the class).</li>
+  </ol>
+  <hr>
+  <h3 id="3-the-mathematical-formula">3. The Mathematical Formula</h3>
+  <p>This formula is essential for 10-mark questions.</p>
+  <p><strong>1. Calculate Weights ($\alpha_k^c$):</strong>
+    $$\alpha_k^c = \frac{1}{Z} \sum_{i} \sum_{j} \frac{\partial y^c}{\partial A_{ij}^k}$$</p>
+  <ul>
+    <li>$\alpha_k^c$: The weight of feature map $k$ for class $c$.</li>
+    <li>$Z$: Number of pixels in the feature map (Normalization).</li>
+    <li>$\frac{\partial y^c}{\partial A_{ij}^k}$: Gradient of the class score w.r.t pixels in the feature map.</li>
+  </ul>
+  <p><strong>2. Calculate Heatmap ($L_{Grad-CAM}^c$):</strong>
+    $$L_{Grad-CAM}^c = ReLU \left( \sum_k \alpha_k^c A^k \right)$$</p>
+  <ul>
+    <li>We sum the feature maps ($A^k$) weighted by their importance ($\alpha_k^c$).</li>
+    <li>ReLU ensures we only look at pixels that <em>increase</em> the class probability.</li>
+  </ul>
+  <hr>
+  <h3 id="4-visualizing-grad-cam">4. Visualizing Grad-CAM</h3>
+  <p>Grad-CAM produces a coarse &quot;Heatmap&quot; (Red = High attention, Blue = Low attention) that is usually
+    overlaid on the original image.</p>
+  <svg width="100%" height="350" xmlns="http://www.w3.org/2000/svg"
+    style="background:#fff; border: 1px solid #ddd; border-radius: 8px;">
+    <image
+      href="https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/American_Eskimo_Dog.jpg/320px-American_Eskimo_Dog.jpg"
+      x="20" y="80" width="150" height="150" opacity="0.3" />
+    <rect x="20" y="80" width="150" height="150" fill="#eee" stroke="#333" />
+    <text x="95" y="160" text-anchor="middle">Input Image</text>
+
+    <line x1="180" y1="155" x2="220" y2="155" stroke="#333" stroke-width="2" marker-end="url(#arrow)" />
+
+    <rect x="220" y="100" width="80" height="110" fill="#2c3e50" rx="5" />
+    <text x="260" y="155" text-anchor="middle" fill="white" font-size="12">CNN</text>
+
+    <line x1="300" y1="155" x2="340" y2="155" stroke="#333" stroke-width="2" marker-end="url(#arrow)" />
+
+    <rect x="340" y="110" width="20" height="30" fill="#3498db" opacity="0.8" />
+    <rect x="350" y="120" width="20" height="30" fill="#e74c3c" opacity="0.8" />
+    <rect x="360" y="130" width="20" height="30" fill="#f1c40f" opacity="0.8" />
+    <text x="360" y="180" text-anchor="middle" font-size="10">Feature Maps</text>
+
+    <text x="400" y="155" text-anchor="middle" font-size="20">×</text>
+    <text x="400" y="180" text-anchor="middle" font-size="10">Weights (α)</text>
+
+    <defs>
+      <radialGradient id="heat" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+        <stop offset="0%" style="stop-color:red;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:blue;stop-opacity:0" />
+      </radialGradient>
+    </defs>
+
+    <rect x="450" y="80" width="150" height="150" fill="#eee" stroke="#333" />
+    <circle cx="525" cy="155" r="40" fill="url(#heat)" />
+    <text x="525" y="250" text-anchor="middle" font-weight="bold">Grad-CAM Output</text>
+    <text x="525" y="265" text-anchor="middle" font-size="10">Highlights the &quot;Dog Face&quot;</text>
+
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#333" />
+      </marker>
+    </defs>
+  </svg>
+
+  <hr>
+  <h3 id="5-guided-grad-cam">5. Guided Grad-CAM</h3>
+  <p>While Grad-CAM is great for <strong>Localization</strong> (finding the region), it is <strong>coarse</strong>
+    (blurry).
+    Saliency Maps are <strong>sharp</strong> (pixel-perfect) but noisy.</p>
+  <p><strong>Guided Grad-CAM</strong> combines both:</p>
+  <ul>
+    <li><strong>Formula:</strong> $ElementwiseProduct(GradCAM, SaliencyMap)$</li>
+    <li><strong>Result:</strong> High-resolution highlighting of the object. It shows the <em>stripes</em> of the cat
+      (Saliency) but only on the <em>cat body</em> (Grad-CAM), ignoring the background grass.</li>
+  </ul>
+  <hr>
+  <h3 id="6-advantages-and-disadvantages">6. Advantages and Disadvantages</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align:left">Feature</th>
+        <th style="text-align:left">Advantages</th>
+        <th style="text-align:left">Disadvantages</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align:left"><strong>Localization</strong></td>
+        <td style="text-align:left">Excellent at locating objects without bounding box labels.</td>
+        <td style="text-align:left">Low resolution (coarse heatmap) due to pooling.</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Model Agnostic?</strong></td>
+        <td style="text-align:left">No, but <strong>Architecture Agnostic</strong>. Works on any CNN (ResNet, VGG,
+          AlexNet).</td>
+        <td style="text-align:left">Requires access to internal layers (White-box).</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Class Specific</strong></td>
+        <td style="text-align:left">Can generate different maps for &quot;Cat&quot; and &quot;Dog&quot; in the same
+          image.</td>
+        <td style="text-align:left">Can fail if multiple instances of the same object exist close together.</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Trust</strong></td>
+        <td style="text-align:left">Helps verify the model isn&#39;t cheating (e.g., looking at the background).</td>
+        <td style="text-align:left">Vulnerable to adversarial attacks.</td>
+      </tr>
+    </tbody>
+  </table>
+  <hr>
+  <h3 id="7-exam-question-bank">7. Exam Question Bank</h3>
+  <p><strong>Q1 (Short - 2 Marks): Why do we use ReLU in the Grad-CAM formula?</strong></p>
+  <blockquote>
+    <p><strong>Ans:</strong> We apply ReLU ($f(x) = max(0, x)$) to the weighted combination of maps because we are only
+      interested in features that have a <strong>positive influence</strong> on the class of interest. Negative pixels
+      would imply regions that belong to other categories, which we want to ignore.</p>
+  </blockquote>
+  <p><strong>Q2 (5 Marks): Explain the difference between Grad-CAM and Saliency Maps.</strong></p>
+  <blockquote>
+    <p><strong>Hint:</strong></p>
+    <ul>
+      <li><strong>Saliency:</strong> Input space (Pixels). Shows fine detail. Noisy.</li>
+      <li><strong>Grad-CAM:</strong> Feature space (Layers). Shows semantic regions (Localization). Blurry but robust.
+      </li>
+    </ul>
+  </blockquote>
+  <p><strong>Q3 (10 Marks): Derive the Grad-CAM algorithm. How does it calculate the importance weights
+      ($\alpha$)?</strong></p>
+  <blockquote>
+    <p><strong>Structure:</strong></p>
+    <ol>
+      <li><strong>Goal:</strong> To visualize which parts of the image activated the class $c$.</li>
+      <li><strong>Step 1:</strong> Compute Gradients of score $y^c$ w.r.t feature maps $A^k$.</li>
+      <li><strong>Step 2 (GAP):</strong> Global Average Pooling. Explain that we average the gradients to get a single
+        number representing the &quot;importance&quot; of that entire feature map.</li>
+      <li><strong>Step 3:</strong> Weighted Sum + ReLU.</li>
+      <li><strong>Diagram:</strong> Draw the CNN $\to$ Gradients $\to$ Heatmap flow.</li>
+    </ol>
+  </blockquote>
+  <hr>
+  <h2 id="topic-3-integrated-gradients">Topic 3: Integrated Gradients</h2>
+  <hr>
+  <h3 id="1-introduction-the-problem-of-gradient-saturation-">1. Introduction: The Problem of &quot;Gradient
+    Saturation&quot;</h3>
+  <p>To understand why we need Integrated Gradients, we must first understand why standard gradients fail.</p>
+  <h4 id="the-saturated-neuron-analogy">The &quot;Saturated Neuron&quot; Analogy</h4>
+  <p>Imagine a neuron is a bucket.</p>
+  <ul>
+    <li><strong>Empty Bucket:</strong> Output = 0. Gradient (Sensitivity) is High.</li>
+    <li><strong>Full Bucket:</strong> Output = 100.</li>
+    <li><strong>Overflowing Bucket:</strong> Output = 100 (Maxed out).</li>
+  </ul>
+  <p>If a pixel contributes <em>so much</em> that the neuron saturates (hits the max value or the flat part of a
+    Sigmoid/ReLU function), the local gradient becomes <strong>Zero</strong>.</p>
+  <ul>
+    <li><strong>Result:</strong> The standard Saliency Map says &quot;This pixel is irrelevant&quot; (Gradient 0), even
+      though it is the <em>most</em> relevant pixel causing the neuron to fire.</li>
+    <li><strong>Integrated Gradients</strong> solves this by measuring the gradient <strong>along a path</strong> from
+      empty to full.</li>
+  </ul>
+  <hr>
+  <h3 id="2-the-axiomatic-approach">2. The Axiomatic Approach</h3>
+  <p>Integrated Gradients (proposed by Sundararajan et al., 2017) is famous because it satisfies two critical
+    mathematical axioms.</p>
+  <h4 id="a-axiom-1-sensitivity">A. Axiom 1: Sensitivity</h4>
+  <p>If for every input that differs in one feature but has different predictions then the differing feature should be
+    given a non-zero attribution.</p>
+  <ul>
+    <li><em>Vanilla Gradients violate this</em> (due to Saturation). IG satisfies it.</li>
+  </ul>
+  <h4 id="b-axiom-2-implementation-invariance">B. Axiom 2: Implementation Invariance</h4>
+  <p>If two neural networks are functionally equivalent (produce same outputs for same inputs) but have different
+    internal structures (different layers/activations), the attribution method should yield the <strong>same</strong>
+    explanation.</p>
+  <ul>
+    <li><em>DeepLIFT/LRP sometimes violate this.</em> IG satisfies it.</li>
+  </ul>
+  <hr>
+  <h3 id="3-the-math-path-integral">3. The Math: Path Integral</h3>
+  <p>Instead of calculating the gradient at the specific input $x$, IG calculates the gradient at points along a
+    straight line path from a <strong>Baseline</strong> ($x'$) to the <strong>Input</strong> ($x$).</p>
+  <h4 id="the-formula-memorize-for-exams-">The Formula (Memorize for Exams)</h4>
+  <p>$$IG_i(x) = (x_i - x'_i) \times \int_{\alpha=0}^{1} \frac{\partial F(x' + \alpha(x - x'))}{\partial x_i} d\alpha$$</p>
+  <p><strong>Breakdown:</strong></p>
+  <ol>
+    <li><strong>Baseline ($x'$):</strong> Usually a black image (all zeros). It represents &quot;absence of
+      signal.&quot;</li>
+    <li><strong>Path ($\alpha$):</strong> A scalar from 0 to 1.<ul>
+        <li>$\alpha=0$: The Black Image.</li>
+        <li>$\alpha=0.5$: A 50% dark version of the image.</li>
+        <li>$\alpha=1.0$: The Real Image.</li>
+      </ul>
+    </li>
+    <li><strong>Integral ($\int$):</strong> We sum up the gradients at every step along this path.</li>
+    <li><strong>Result:</strong> This recovers the information lost to saturation.</li>
+  </ol>
+  <hr>
+  <h3 id="4-visualization-the-fade-in-process">4. Visualization: The &quot;Fade-In&quot; Process</h3>
+  <p>The easiest way to understand IG is to visualize the &quot;Alpha Path.&quot;</p>
+  <svg width="100%" height="300" xmlns="http://www.w3.org/2000/svg"
+    style="background:#fff; border: 1px solid #ddd; border-radius: 8px;">
+    <text x="300" y="30" text-anchor="middle" font-weight="bold">The Integrated Gradients Path</text>
+
+    <rect x="50" y="80" width="80" height="80" fill="#000" stroke="#333" />
+    <text x="90" y="180" text-anchor="middle" font-size="10">Baseline (x&#39;)</text>
+    <text x="90" y="195" text-anchor="middle" font-size="10">α = 0.0</text>
+
+    <rect x="150" y="80" width="80" height="80" fill="#333" stroke="#333" />
+    <circle cx="190" cy="120" r="20" fill="#555" />
+    <text x="190" y="195" text-anchor="middle" font-size="10">α = 0.3</text>
+
+    <rect x="250" y="80" width="80" height="80" fill="#666" stroke="#333" />
+    <circle cx="290" cy="120" r="20" fill="#999" />
+    <text x="290" y="195" text-anchor="middle" font-size="10">α = 0.6</text>
+
+    <rect x="350" y="80" width="80" height="80" fill="#eee" stroke="#333" />
+    <circle cx="390" cy="120" r="20" fill="#333" /> <text x="390" y="180" text-anchor="middle" font-size="10">Input
+      (x)</text>
+    <text x="390" y="195" text-anchor="middle" font-size="10">α = 1.0</text>
+
+    <line x1="90" y1="230" x2="390" y2="230" stroke="#2c3e50" stroke-width="2" marker-end="url(#arrow)" />
+    <text x="240" y="250" text-anchor="middle" font-weight="bold" fill="#2c3e50">Accumulate Gradients along this
+      path</text>
+
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#2c3e50" />
+      </marker>
+    </defs>
+  </svg>
+
+  <hr>
+  <h3 id="5-implementation-approximation-">5. Implementation (Approximation)</h3>
+  <p>Computers cannot calculate perfect integrals. We approximate it using a <strong>Riemann Sum</strong> (usually 50 to
+    100 steps).</p>
+  <p><strong>Algorithm:</strong></p>
+  <ol>
+    <li>Generate 50 images ranging from Black $\to$ Real Image.</li>
+    <li>Feed all 50 images into the network.</li>
+    <li>Calculate the gradient for each image.</li>
+    <li>Average the gradients.</li>
+    <li>Multiply by the input image ($x - x&#39;$).</li>
+  </ol>
+  <p><strong>Completeness Axiom:</strong>
+    One of the most powerful properties of IG is:
+    $$\sum Attribution_i = F(x) - F(x&#39;)$$</p>
+  <ul>
+    <li>The sum of all pixel attributions is <strong>exactly equal</strong> to the difference between the Model Score
+      for the Image and the Model Score for the Baseline.</li>
+    <li><em>Example:</em> If Model Score = 0.9 and Baseline Score = 0.0, the pixel importances will sum up to exactly
+      0.9. This guarantees <strong>no information is lost</strong>.</li>
+  </ul>
+  <hr>
+  <h3 id="6-advantages-and-disadvantages">6. Advantages and Disadvantages</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align:left">Feature</th>
+        <th style="text-align:left">Advantages</th>
+        <th style="text-align:left">Disadvantages</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align:left"><strong>Accuracy</strong></td>
+        <td style="text-align:left"><strong>High.</strong> Solves the saturation problem.</td>
+        <td style="text-align:left"><strong>Computational Cost.</strong> Slower than vanilla gradients (requires 50
+          forward/backward passes).</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Theory</strong></td>
+        <td style="text-align:left"><strong>Axiomatic.</strong> Satisfies Sensitivity and Completeness.</td>
+        <td style="text-align:left"><strong>Baseline Selection.</strong> What is a &quot;Baseline&quot;? Is it a black
+          image? A white image? Random noise? The explanation changes depending on the baseline.</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Resolution</strong></td>
+        <td style="text-align:left">Pixel-level detail. Sharp.</td>
+        <td style="text-align:left">Can still be visually noisy compared to Grad-CAM.</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Application</strong></td>
+        <td style="text-align:left">Works on Images, Text (using embedding baselines), and Tabular data.</td>
+        <td style="text-align:left">Susceptible to adversarial attacks (like most gradient methods).</td>
+      </tr>
+    </tbody>
+  </table>
+  <hr>
+  <h3 id="7-exam-question-bank">7. Exam Question Bank</h3>
+  <p><strong>Q1 (Short - 2 Marks): What is the &quot;Completeness Axiom&quot; in Integrated Gradients?</strong></p>
+  <blockquote>
+    <p><strong>Ans:</strong> It states that the sum of the attributions (Integrated Gradients) for all features is
+      exactly equal to the difference between the model&#39;s output for the input $x$ and the model&#39;s output for
+      the baseline $x&#39;$.
+      $\sum IG = F(x) - F(baseline)$.</p>
+  </blockquote>
+  <p><strong>Q2 (5 Marks): Explain the choice of &quot;Baseline&quot; in Integrated Gradients.</strong></p>
+  <blockquote>
+    <p><strong>Hint:</strong></p>
+    <ol>
+      <li>The baseline ($x&#39;$) represents the &quot;absence&quot; of information.</li>
+      <li>For images, it is usually a <strong>Black Image</strong> (all pixel values = 0).</li>
+      <li>The IG measures how much each pixel contributes to moving the prediction from &quot;Nothing&quot; to
+        &quot;Cat&quot;.</li>
+      <li>Mention that choosing a bad baseline (e.g., random noise) can produce confusing explanations.</li>
+    </ol>
+  </blockquote>
+  <p><strong>Q3 (10 Marks): &quot;Standard Gradients suffer from saturation, rendering them unreliable.&quot; Explain
+      this statement and how Integrated Gradients provides a solution.</strong></p>
+  <blockquote>
+    <p><strong>Structure:</strong></p>
+    <ol>
+      <li><strong>Define Saturation:</strong> In Deep Nets (ReLU/Sigmoid), gradients vanish when activation is high.
+      </li>
+      <li><strong>Consequence:</strong> Important features get Zero attribution (False Negatives).</li>
+      <li><strong>IG Solution:</strong> Instead of looking at the endpoint (where gradient is 0), IG integrates the
+        gradient along the path from baseline.</li>
+      <li><strong>Analogy:</strong> Mention the &quot;filling the bucket&quot; analogy.</li>
+    </ol>
+  </blockquote>
+  <hr>
+  <h2 id="topic-4-layer-wise-relevance-propagation-lrp-">Topic 4: Layer-wise Relevance Propagation (LRP)</h2>
+  <hr>
+  <h3 id="1-introduction-the-conservation-principle">1. Introduction: The Conservation Principle</h3>
+  <p>Gradient methods (Saliency, IG) ask: <em>&quot;How sensitive is the output to a change in input?&quot;</em>
+    <strong>LRP</strong> asks: <em>&quot;How much did each pixel contribute to the prediction value?&quot;</em>
+  </p>
+  <h4 id="the-core-idea-conservation-of-relevance">The Core Idea: Conservation of Relevance</h4>
+  <p>LRP treats the prediction score (e.g., $f(x) = 0.9$ for &quot;Cat&quot;) as a fixed amount of
+    &quot;Relevance.&quot;</p>
+  <ul>
+    <li><strong>Step 1:</strong> Start at the output layer. The total relevance is 0.9.</li>
+    <li><strong>Step 2:</strong> Redistribute this 0.9 backwards to the previous layer of neurons based on their
+      activation strength.</li>
+    <li><strong>Step 3:</strong> Continue layer-by-layer until we reach the input pixels.</li>
+    <li><strong>Rule:</strong> Total Relevance at Input = Total Relevance at Output. (Nothing is lost).</li>
+  </ul>
+  <hr>
+  <h3 id="2-the-propagation-rule-how-it-flows-">2. The Propagation Rule (How it flows)</h3>
+  <p>How do we decide how much relevance flows from Neuron $k$ (next layer) to Neuron $j$ (current layer)?</p>
+  <h4 id="the-basic-rule-lrp-0-">The Basic Rule ($LRP-0$)</h4>
+  <p>$$R_j = \sum_k \frac{a_j w_{jk}}{\sum_i a_i w_{ik}} R_k$$</p>
+  <p><strong>Plain English:</strong></p>
+  <ol>
+    <li><strong>$R_k$</strong>: Relevance of the neuron in the upper layer.</li>
+    <li><strong>$w_{jk}$</strong>: The weight connecting neuron $j$ to $k$.</li>
+    <li><strong>$a_j$</strong>: The activation of neuron $j$.</li>
+    <li><strong>Logic:</strong> If neuron $j$ had a strong activation ($a_j$) and a strong weight ($w_{jk}$), it
+      gets a bigger slice of the relevance pie.</li>
+  </ol>
+  <hr>
+  <h3 id="3-visualizing-lrp-the-backward-flow-">3. Visualizing LRP (The Backward Flow)</h3>
+  <p>Imagine the Neural Network as a series of pipes. The water (Prediction) starts at the top and flows down to the
+    input.</p>
+  <svg width="100%" height="350" xmlns="http://www.w3.org/2000/svg"
+    style="background:#fff; border: 1px solid #ddd; border-radius: 8px;">
+    <text x="300" y="30" text-anchor="middle" font-weight="bold">LRP: Backward Redistribution</text>
+
+    <circle cx="300" cy="80" r="20" fill="#e74c3c" stroke="#333" />
+    <text x="340" y="85" font-size="12" font-weight="bold">Output (0.9)</text>
+    <text x="300" y="115" text-anchor="middle" font-size="10">R = 0.9</text>
+
+    <circle cx="200" cy="200" r="15" fill="#3498db" stroke="#333" />
+    <circle cx="300" cy="200" r="15" fill="#3498db" stroke="#333" />
+    <circle cx="400" cy="200" r="15" fill="#3498db" stroke="#333" />
+
+    <line x1="300" y1="100" x2="200" y2="185" stroke="#333" stroke-width="2" />
+    <line x1="300" y1="100" x2="300" y2="185" stroke="#333" stroke-width="4" />
+    <line x1="300" y1="100" x2="400" y2="185" stroke="#333" stroke-width="1" />
+
+    <text x="180" y="230" text-anchor="middle" font-size="10">R = 0.2</text>
+    <text x="300" y="230" text-anchor="middle" font-size="10" font-weight="bold">R = 0.6</text>
+    <text x="400" y="230" text-anchor="middle" font-size="10">R = 0.1</text>
+
+    <rect x="150" y="300" width="300" height="30" fill="#eee" stroke="#333" />
+    <text x="300" y="320" text-anchor="middle" font-size="12">Input Pixels</text>
+
+    <defs>
+      <marker id="arrowDown" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto"
+        markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#e74c3c" />
+      </marker>
+    </defs>
+    <line x1="300" y1="220" x2="300" y2="290" stroke="#e74c3c" stroke-width="2" marker-end="url(#arrowDown)" />
+    <text x="310" y="260" font-size="10" fill="#e74c3c">Flow</text>
+  </svg>
+
+  <hr>
+  <h3 id="4-advanced-rules-lrp-epsilon-gamma-">4. Advanced Rules (LRP-Epsilon &amp; Gamma)</h3>
+  <p>The basic rule ($LRP-0$) can be unstable if the denominator is close to zero. We fix this with variants:</p>
+  <h4 id="a-lrp-epsilon-epsilon-rule-">A. LRP-$\epsilon$ (Epsilon Rule)</h4>
+  <p>$$R_j = \sum_k \frac{a_j w_{jk}}{\epsilon + \sum_i a_i w_{ik}} R_k$$</p>
+  <ul>
+    <li>We add a small number $\epsilon$ to the denominator.</li>
+    <li><strong>Effect:</strong> It absorbs noise. Weak Relevance disappears, leaving only Strong Relevance. It makes
+      the heatmap &quot;cleaner.&quot;</li>
+  </ul>
+  <h4 id="b-lrp-gamma-gamma-rule-">B. LRP-$\gamma$ (Gamma Rule)</h4>
+  <ul>
+    <li>We favor positive contributions (excitatory) over negative ones (inhibitory).</li>
+    <li><strong>Effect:</strong> Produces heatmaps that look very similar to human attention (focusing on the object,
+      ignoring the background).</li>
+  </ul>
+  <hr>
+  <h3 id="5-lrp-vs-gradients-comparison-">5. LRP vs. Gradients (Comparison)</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align:left">Feature</th>
+        <th style="text-align:left">Gradient-based (IG/Saliency)</th>
+        <th style="text-align:left">Propagation-based (LRP)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align:left"><strong>Concept</strong></td>
+        <td style="text-align:left">Sensitivity (Change). &quot;If I change X, does Y change?&quot;</td>
+        <td style="text-align:left">Decomposition (Contribution). &quot;How much of Y comes from X?&quot;</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Summation</strong></td>
+        <td style="text-align:left">Gradients do not sum to the prediction score.</td>
+        <td style="text-align:left"><strong>Conservation:</strong> Relevances sum exactly to the prediction score.</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Visuals</strong></td>
+        <td style="text-align:left">Often highlights edges (sharp/noisy).</td>
+        <td style="text-align:left">Often highlights textures and full regions (smoother).</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Implementation</strong></td>
+        <td style="text-align:left">Easy (Auto-diff libraries do it).</td>
+        <td style="text-align:left">Hard (Need to manually override backward pass for each layer type).</td>
+      </tr>
+    </tbody>
+  </table>
+  <hr>
+  <h3 id="6-exam-question-bank">6. Exam Question Bank</h3>
+  <p><strong>Q1 (Short - 2 Marks): What is the &quot;Conservation Property&quot; in LRP?</strong></p>
+  <blockquote>
+    <p><strong>Ans:</strong> The Conservation Property states that the total relevance at any layer is equal to the
+      total relevance at the output layer. No relevance is created or destroyed during the backward propagation.
+      $\sum R_{input} = f(x)$.</p>
+  </blockquote>
+  <p><strong>Q2 (5 Marks): Why do we need the Epsilon ($\epsilon$) rule in LRP?</strong></p>
+  <blockquote>
+    <p><strong>Hint:</strong></p>
+    <ol>
+      <li>The basic formula divides by $\sum a_i w_{ik}$.</li>
+      <li>If this sum is close to zero (neuron not firing), the calculation explodes (numerical instability).</li>
+      <li>Adding $\epsilon$ prevents division by zero and filters out &quot;weak&quot; or noisy relevance signals.</li>
+    </ol>
+  </blockquote>
+  <p><strong>Q3 (10 Marks): Explain the mechanism of Layer-wise Relevance Propagation. How does it differ from
+      Gradient-based attribution?</strong></p>
+  <blockquote>
+    <p><strong>Structure:</strong></p>
+    <ol>
+      <li><strong>Define LRP:</strong> A backward propagation technique based on decomposition.</li>
+      <li><strong>Mechanism:</strong> Explain the flow from Output $\to$ Hidden $\to$ Input. Write the basic formula.
+      </li>
+      <li><strong>Contrast:</strong>
+        <ul>
+          <li>Gradient = Partial Derivative (Sensitivity).</li>
+          <li>LRP = Contribution (Accounting).</li>
+        </ul>
+      </li>
+      <li><strong>Diagram:</strong> Draw the &quot;Redistribution&quot; diagram shown above.</li>
+    </ol>
+  </blockquote>
+  <hr>
+  <h2 id="topic-5-attention-mechanisms-interpretability">Topic 5: Attention Mechanisms &amp; Interpretability</h2>
+  <hr>
+  <h3 id="1-introduction-the-spotlight-of-ai">1. Introduction: The Spotlight of AI</h3>
+  <p>In older NLP models (RNNs), the model tried to remember the entire sentence in a single hidden state. This failed
+    for long sentences.
+    <strong>Attention Mechanisms</strong> changed this. They allow the model to &quot;look&quot; at different parts of
+    the input sentence when generating each word of the output.
+  </p>
+  <ul>
+    <li><strong>The Analogy:</strong> When you translate a sentence from English to Hindi, you don&#39;t memorize the
+      whole paragraph. You look at the first word, translate it, then look at the second word, and so on. Your eyes
+      &quot;attend&quot; to specific words.</li>
+    <li><strong>XAI Value:</strong> Because the model calculates explicit <strong>Attention Weights</strong> ($\alpha$)
+      for every word, we can visualize exactly what the model focused on.</li>
+  </ul>
+  <hr>
+  <h3 id="2-the-mechanism-query-key-value-">2. The Mechanism (Query, Key, Value)</h3>
+  <p>The core of modern Attention (Self-Attention in Transformers) works on a database retrieval concept.</p>
+  <h4 id="the-math-softmax-">The Math (Softmax)</h4>
+  <p>$$Attention(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$</p>
+  <ul>
+    <li><strong>Q (Query):</strong> What am I looking for?</li>
+    <li><strong>K (Key):</strong> What do the input words offer?</li>
+    <li><strong>$\text{softmax}(\dots)$:</strong> This produces the <strong>Attention Weights</strong>.<ul>
+        <li>A score between 0 and 1.</li>
+        <li>Sum of scores = 1.</li>
+        <li><strong>Interpretation:</strong> If the score for the word &quot;Bank&quot; is 0.9 and &quot;River&quot; is
+          0.1, the model is focusing 90% on &quot;Bank.&quot;</li>
+      </ul>
+    </li>
+  </ul>
+  <hr>
+  <h3 id="3-visualizing-attention-the-heatmap-">3. Visualizing Attention (The Heatmap)</h3>
+  <p>The most common way to interpret Transformers is by plotting the <strong>Attention Matrix</strong>.</p>
+  <ul>
+    <li><strong>Rows:</strong> Output words (or current processing step).</li>
+    <li><strong>Columns:</strong> Input words.</li>
+    <li><strong>Color:</strong> The Attention Weight ($\alpha$).</li>
+  </ul>
+  <h4 id="example-sentiment-analysis">Example: Sentiment Analysis</h4>
+  <ul>
+    <li><strong>Input:</strong> &quot;The movie was <strong>terrible</strong> but the acting was
+      <strong>great</strong>.&quot;</li>
+    <li><strong>Prediction:</strong> &quot;Negative.&quot;</li>
+    <li><strong>Visualization:</strong> We check which word had the highest attention weight.</li>
+  </ul>
+  <svg width="100%" height="350" xmlns="http://www.w3.org/2000/svg"
+    style="background:#fff; border: 1px solid #ddd; border-radius: 8px;">
+    <text x="300" y="30" text-anchor="middle" font-weight="bold">Attention Heatmap (Sentiment)</text>
+
+    <text x="80" y="250" font-family="Courier New">The</text>
+    <text x="130" y="250" font-family="Courier New">movie</text>
+    <text x="180" y="250" font-family="Courier New">was</text>
+    <text x="230" y="250" font-family="Courier New" font-weight="bold">terrible</text>
+    <text x="300" y="250" font-family="Courier New">but</text>
+    <text x="350" y="250" font-family="Courier New">acting</text>
+    <text x="400" y="250" font-family="Courier New" font-weight="bold">great</text>
+
+    <text x="50" y="150" font-family="Arial" font-weight="bold">Class: Negative</text>
+
+    <rect x="70" y="130" width="40" height="40" fill="#e3f2fd" />
+    <text x="90" y="155" text-anchor="middle" font-size="10">0.01</text>
+
+    <rect x="120" y="130" width="40" height="40" fill="#e3f2fd" />
+    <text x="140" y="155" text-anchor="middle" font-size="10">0.05</text>
+
+    <rect x="170" y="130" width="40" height="40" fill="#e3f2fd" />
+    <text x="190" y="155" text-anchor="middle" font-size="10">0.02</text>
+
+    <rect x="220" y="130" width="60" height="40" fill="#e74c3c" />
+    <text x="250" y="155" text-anchor="middle" font-size="12" font-weight="bold" fill="white">0.80</text>
+
+    <rect x="290" y="130" width="40" height="40" fill="#90caf9" />
+    <text x="310" y="155" text-anchor="middle" font-size="10">0.10</text>
+
+    <rect x="390" y="130" width="40" height="40" fill="#e3f2fd" />
+    <text x="410" y="155" text-anchor="middle" font-size="10">0.02</text>
+
+    <line x1="250" y1="170" x2="250" y2="230" stroke="#e74c3c" stroke-width="2" stroke-dasharray="5,5" />
+    <text x="250" y="280" text-anchor="middle" font-size="10" fill="#e74c3c">Model focuses here</text>
+  </svg>
+
+  <p><strong>Interpretation:</strong>
+    The model predicted &quot;Negative&quot; because it attended 80% to the word &quot;terrible&quot;. This confirms the
+    model is working correctly.</p>
+  <hr>
+  <h3 id="4-the-debate-attention-is-not-explanation-">4. The Debate: &quot;Attention is Not Explanation&quot;</h3>
+  <p>This is a critical topic for advanced students. In 2019, a famous paper titled <em>&quot;Attention is not
+      Explanation&quot;</em> (Jain &amp; Wallace) sparked a debate.</p>
+  <h4 id="the-argument-against">The Argument Against</h4>
+  <ul>
+    <li><strong>Correlation $\neq$ Causation:</strong> Just because the model &quot;looked&quot; at a word (High
+      $\alpha$) doesn&#39;t mean that word caused the output.</li>
+    <li><strong>Counter-example:</strong> You can sometimes zero out the high-attention words, and the model prediction
+      <em>doesn&#39;t change</em>. This implies the attention was misleading.</li>
+  </ul>
+  <h4 id="the-argument-for-attention-is-not-not-explanation-">The Argument For (&quot;Attention is not not
+    Explanation&quot;)</h4>
+  <ul>
+    <li><strong>Wiegreffe &amp; Pinter (2019):</strong> They argued that while attention isn&#39;t a perfect causal
+      explanation, it is a useful diagnostic tool. It shows the information flow, which is a necessary part of the
+      explanation.</li>
+  </ul>
+  <hr>
+  <h3 id="5-multi-head-attention-visualization">5. Multi-Head Attention Visualization</h3>
+  <p>Modern Transformers (BERT) have multiple &quot;Heads&quot; (e.g., 12 heads). Each head looks at different things.
+  </p>
+  <ul>
+    <li><strong>Head 1:</strong> Might focus on grammar (Subject-Verb relationship).</li>
+    <li><strong>Head 2:</strong> Might focus on sentiment (Adjectives).</li>
+    <li><strong>Head 3:</strong> Might look at the next word.</li>
+  </ul>
+  <p><strong>Interpretation Challenge:</strong> Since there are 12 different attention maps, which one do we trust? We
+    often take the <strong>average</strong> or look at the specific head known to capture the relevant linguistic
+    feature.</p>
+  <hr>
+  <h3 id="6-exam-question-bank">6. Exam Question Bank</h3>
+  <p><strong>Q1 (Short - 2 Marks): What do the weights in an Attention Mechanism represent?</strong></p>
+  <blockquote>
+    <p><strong>Ans:</strong> They represent the relevance or importance of each input element (e.g., a word) relative to
+      the current output being generated. They sum to 1 (probability distribution).</p>
+  </blockquote>
+  <p><strong>Q2 (5 Marks): Explain how Attention Maps serve as an interpretability tool in Neural Machine
+      Translation.</strong></p>
+  <blockquote>
+    <p><strong>Hint:</strong></p>
+    <ol>
+      <li>Draw a grid (Matrix).</li>
+      <li>X-axis: English Source (&quot;I love AI&quot;). Y-axis: French Target (&quot;J&#39;aime l&#39;IA&quot;).</li>
+      <li>Explain that when the model generates &quot;J&#39;aime&quot;, the attention weight should be high for
+        &quot;love&quot;. This alignment verifies the model &quot;knows&quot; which word translates to which.</li>
+    </ol>
+  </blockquote>
+  <p><strong>Q3 (10 Marks): Discuss the controversy &quot;Attention is not Explanation.&quot;</strong></p>
+  <blockquote>
+    <p><strong>Structure:</strong></p>
+    <ol>
+      <li><strong>Premise:</strong> Attention weights are often treated as feature importance.</li>
+      <li><strong>Critique (Jain et al.):</strong> Experiments show that attention weights often do not correlate with
+        gradient-based feature importance. Different attention distributions can yield the same prediction.</li>
+      <li><strong>Defense (Wiegreffe et al.):</strong> Attention is an internal mechanism, not a post-hoc justification.
+        It provides insight into the architecture&#39;s focus, even if not a strict causal link.</li>
+    </ol>
+  </blockquote>
+  <hr>
+  <h2 id="topic-6-surrogate-models-for-cnns-rnns-llm-challenges">Topic 6: Surrogate Models for CNNs, RNNs &amp; LLM
+    Challenges</h2>
+  <hr>
+  <h3 id="1-introduction-the-representation-gap">1. Introduction: The &quot;Representation&quot; Gap</h3>
+  <p>When we used Surrogates (LIME) in Unit III, we assumed tabular data (Age, Salary).</p>
+  <ul>
+    <li><strong>Tabular Data:</strong> Features are meaningful (Age=30).</li>
+    <li><strong>CNN Data (Images):</strong> Features are pixels (Pixel_405 = 255). A single pixel has no meaning.</li>
+    <li><strong>RNN Data (Text):</strong> Features are word vectors (embeddings). A vector <code>[0.1, -0.5, ...]</code>
+      is unreadable.</li>
+  </ul>
+  <p>To build Surrogate models for Deep Learning, we must bridge the gap between <strong>Raw Features</strong>
+    (Pixels/Embeddings) and <strong>Interpretable Components</strong> (Super-pixels/Words).</p>
+  <hr>
+  <h3 id="2-surrogate-models-for-cnns-image-lime-">2. Surrogate Models for CNNs (Image LIME)</h3>
+  <p>We cannot explain an image pixel-by-pixel. Instead, we group pixels into <strong>Super-pixels</strong>.</p>
+  <h4 id="a-the-process-segmentation-">A. The Process (Segmentation)</h4>
+  <ol>
+    <li><strong>Input:</strong> An image of a dog on grass.</li>
+    <li><strong>Segmentation:</strong> We use an algorithm (like QuickShift or SLIC) to carve the image into ~50 large
+      &quot;patches&quot; or &quot;super-pixels&quot; (e.g., The Dog&#39;s Ear, The Dog&#39;s Nose, The Grass).</li>
+    <li><strong>Perturbation (The Surrogate Trick):</strong>
+      <ul>
+        <li>Instead of changing pixel values, we <strong>toggle super-pixels On or Off</strong> (gray them out).</li>
+        <li><em>Binary Representation:</em> <code>[1, 1, 0, 1]</code> means &quot;Ear On, Nose On, Grass Off, Tail
+          On.&quot;</li>
+      </ul>
+    </li>
+    <li><strong>Training:</strong> We train a Linear Regression model on this binary vector.<ul>
+        <li><em>Result:</em> &quot;The super-pixel #3 (Nose) has weight +0.8.&quot;</li>
+      </ul>
+    </li>
+  </ol>
+  <h4 id="b-visualizing-image-surrogates">B. Visualizing Image Surrogates</h4>
+  <svg width="100%" height="300" xmlns="http://www.w3.org/2000/svg"
+    style="background:#fff; border: 1px solid #ddd; border-radius: 8px;">
+    <rect x="20" y="50" width="100" height="100" fill="#eee" stroke="#333" />
+    <circle cx="70" cy="100" r="30" fill="#333" />
+    <text x="70" y="170" text-anchor="middle" font-size="10">Raw Image (Pixels)</text>
+
+    <line x1="130" y1="100" x2="160" y2="100" stroke="#333" stroke-width="2" marker-end="url(#arrow)" />
+
+    <rect x="170" y="50" width="100" height="100" fill="#fff" stroke="#333" />
+    <path d="M170,50 L220,50 L200,100 L170,80 Z" fill="#bbdefb" stroke="#fff" />
+    <path d="M220,50 L270,50 L270,100 L200,100 Z" fill="#bbdefb" stroke="#fff" />
+    <path d="M170,150 L270,150 L270,100 L170,100 Z" fill="#c8e6c9" stroke="#fff" />
+    <circle cx="220" cy="100" r="25" fill="#555" stroke="#fff" stroke-width="2" /> <text x="220" y="170"
+      text-anchor="middle" font-size="10">Super-pixels (Patches)</text>
+
+    <line x1="280" y1="100" x2="310" y2="100" stroke="#333" stroke-width="2" marker-end="url(#arrow)" />
+
+    <rect x="320" y="50" width="140" height="100" fill="#fff3e0" stroke="#e65100" rx="5" />
+    <text x="390" y="80" text-anchor="middle" font-weight="bold" font-size="12">Linear Surrogate</text>
+    <text x="390" y="100" text-anchor="middle" font-size="10">y = 0.5<em>Patch_1 + 0.9</em>Patch_2</text>
+    <text x="390" y="120" text-anchor="middle" font-size="10" fill="#d35400">Interpretation: Patch 2 (Ear)</text>
+    <text x="390" y="135" text-anchor="middle" font-size="10" fill="#d35400">is the cause.</text>
+
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#333" />
+      </marker>
+    </defs>
+  </svg>
+
+  <hr>
+  <h3 id="3-surrogate-models-for-rnns-text-lime-">3. Surrogate Models for RNNs (Text LIME)</h3>
+  <p>For Recurrent Neural Networks (RNNs/LSTMs) processing text, the &quot;Raw Features&quot; are Word Embeddings (dense
+    vectors of numbers).</p>
+  <h4 id="a-the-process-bag-of-words-">A. The Process (Bag of Words)</h4>
+  <ol>
+    <li><strong>Input:</strong> &quot;This movie is bad.&quot;</li>
+    <li><strong>Mapping:</strong> Map words to a binary list. <code>[This, movie, is, bad]</code>.</li>
+    <li><strong>Perturbation:</strong> Randomly remove words.<ul>
+        <li>Sample 1: &quot;This ... is bad.&quot; (Prediction: Negative).</li>
+        <li>Sample 2: &quot;This movie is ...&quot; (Prediction: Neutral).</li>
+      </ul>
+    </li>
+    <li><strong>Training:</strong> The Surrogate model learns that removing &quot;bad&quot; causes the biggest drop in
+      the score.</li>
+    <li><strong>Explanation:</strong> The word &quot;bad&quot; gets a high importance weight.</li>
+  </ol>
+  <hr>
+  <h3 id="4-concept-bottleneck-models-cbms-">4. Concept Bottleneck Models (CBMs)</h3>
+  <p>This is an advanced &quot;White-box Surrogate&quot; technique specifically for CNNs.
+    Instead of going <code>Image -&gt; Class</code>, we force the model to go
+    <code>Image -&gt; Concepts -&gt; Class</code>.</p>
+  <ul>
+    <li><strong>Standard CNN:</strong> Image $\to$ &quot;Zebra&quot;</li>
+    <li><strong>CBM:</strong>
+      <ol>
+        <li>Image $\to$ [Has Stripes: Yes], [Has Hooves: Yes], [Color: Black/White].</li>
+        <li>Concepts $\to$ &quot;Zebra&quot;.</li>
+      </ol>
+    </li>
+    <li><strong>Advantage:</strong> If the model fails, we know exactly why. (e.g., &quot;It didn&#39;t see the
+      stripes&quot;).</li>
+  </ul>
+  <hr>
+  <h3 id="5-explanation-challenges-in-large-language-models-llms-">5. Explanation Challenges in Large Language Models
+    (LLMs)</h3>
+  <p>Modern LLMs (GPT-4, Llama) introduce unique problems for XAI.</p>
+  <h4 id="a-the-context-window-problem">A. The &quot;Context Window&quot; Problem</h4>
+  <ul>
+    <li><strong>Issue:</strong> An LLM can take 100,000 words as input.</li>
+    <li><strong>XAI Failure:</strong> Calculating SHAP values for 100,000 features is computationally impossible
+      (Recall: SHAP is NP-Hard). Saliency maps become massive and unreadable.</li>
+  </ul>
+  <h4 id="b-the-hallucination-of-explanations">B. The &quot;Hallucination&quot; of Explanations</h4>
+  <ul>
+    <li><strong>CoT (Chain of Thought):</strong> We can ask the LLM: <em>&quot;Explain why you chose this
+        answer.&quot;</em></li>
+    <li><strong>The Risk:</strong> The LLM might generate a plausible-sounding explanation that has <em>nothing</em> to
+      do with its internal math. This is <strong>Unfaithful Explanation</strong>. It is making up a story, not
+      explaining its neurons.</li>
+  </ul>
+  <h4 id="c-the-polysemanticity-of-neurons">C. The &quot;Polysemanticity&quot; of Neurons</h4>
+  <ul>
+    <li>In small models, one neuron might detect &quot;Cat ears.&quot;</li>
+    <li>In LLMs, a single neuron might activate for &quot;Shakespeare,&quot; &quot;HTTP Code 404,&quot; and
+      &quot;Pizza.&quot; This overlap makes inspecting individual neurons useless.</li>
+  </ul>
+  <hr>
+  <h3 id="6-visualization-tools-for-neural-networks">6. Visualization Tools for Neural Networks</h3>
+  <p>A quick summary of tools you should name-drop in an exam.</p>
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align:left">Tool</th>
+        <th style="text-align:left">Purpose</th>
+        <th style="text-align:left">What it shows</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align:left"><strong>TensorBoard</strong></td>
+        <td style="text-align:left">Debugging / Training</td>
+        <td style="text-align:left">Loss curves, histograms of weights, graph architecture.</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Netron</strong></td>
+        <td style="text-align:left">Architecture Viewer</td>
+        <td style="text-align:left">Visualizes the layers and connections of a saved model (.h5, .onnx).</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Captum (PyTorch)</strong></td>
+        <td style="text-align:left">XAI Library</td>
+        <td style="text-align:left">Implements Integrated Gradients, DeepLIFT, Grad-CAM easily.</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>BertViz</strong></td>
+        <td style="text-align:left">Attention Visualization</td>
+        <td style="text-align:left">Visualizes attention heads in Transformer models.</td>
+      </tr>
+    </tbody>
+  </table>
+  <hr>
+  <h3 id="7-exam-question-bank">7. Exam Question Bank</h3>
+  <p><strong>Q1 (Short - 2 Marks): What is a &quot;Super-pixel&quot; in the context of image explanations?</strong></p>
+  <blockquote>
+    <p><strong>Ans:</strong> A super-pixel is a group of connected pixels that share common characteristics (like color
+      or texture). In XAI, we use super-pixels as the fundamental &quot;features&quot; for surrogate models because
+      individual pixels are too numerous and lack semantic meaning.</p>
+  </blockquote>
+  <p><strong>Q2 (5 Marks): Why is applying SHAP directly to Large Language Models (LLMs) difficult?</strong></p>
+  <blockquote>
+    <p><strong>Hint:</strong></p>
+    <ol>
+      <li><strong>Computational Cost:</strong> SHAP requires running the model thousands of times. LLMs are huge;
+        running them once is expensive. Running them 5,000 times for one explanation is unfeasible.</li>
+      <li><strong>Feature Space:</strong> The input space (vocabulary size * sequence length) is massive.</li>
+    </ol>
+  </blockquote>
+  <p><strong>Q3 (10 Marks): Explain how LIME can be adapted as a surrogate model for Convolutional Neural Networks
+      (CNNs).</strong></p>
+  <blockquote>
+    <p><strong>Structure:</strong></p>
+    <ol>
+      <li><strong>Problem:</strong> Cannot use pixels directly.</li>
+      <li><strong>Solution:</strong> Image Segmentation (Super-pixels).</li>
+      <li><strong>Algorithm:</strong>
+        <ul>
+          <li>Segment image.</li>
+          <li>Create binary dataset (1=Super-pixel ON, 0=OFF).</li>
+          <li>Replace &quot;OFF&quot; regions with gray/black color.</li>
+          <li>Train Linear Model.</li>
+        </ul>
+      </li>
+      <li><strong>Result:</strong> Highlighting the super-pixels that correspond to the highest positive weights.</li>
+    </ol>
+  </blockquote>
+  <hr>
+  <h2 id="topic-7-explanation-challenges-in-large-language-models-llms-">Topic 7: Explanation Challenges in Large
+    Language Models (LLMs)</h2>
+  <hr>
+  <h3 id="1-introduction-the-scale-of-the-problem">1. Introduction: The Scale of the Problem</h3>
+  <p>Explaining a Decision Tree is like explaining a bicycle (simple mechanics).
+    Explaining a CNN (ResNet) is like explaining a car engine.
+    Explaining an LLM (GPT-4) is like explaining the traffic flow of an entire city.</p>
+  <p><strong>The Fundamental Shifts:</strong></p>
+  <ol>
+    <li><strong>Size:</strong> From ~50 million parameters (ResNet) to ~1.7 trillion parameters (GPT-4).</li>
+    <li><strong>Input:</strong> From fixed pixels to variable-length, massive context windows (100k+ tokens).</li>
+    <li><strong>Output:</strong> From a single class label (&quot;Cat&quot;) to open-ended creative text.</li>
+  </ol>
+  <hr>
+  <h3 id="2-key-challenges-in-interpreting-llms">2. Key Challenges in Interpreting LLMs</h3>
+  <h4 id="a-the-context-window-dimensionality">A. The &quot;Context Window&quot; &amp; Dimensionality</h4>
+  <ul>
+    <li><strong>The Problem:</strong> Traditional XAI (like SHAP) requires calculating the contribution of every input
+      feature.</li>
+    <li><strong>LLM Reality:</strong> An input prompt might have 10,000 words.<ul>
+        <li>Calculating interactions between 10,000 words is computationally impossible ($2^{10000}$ combinations).</li>
+      </ul>
+    </li>
+    <li><strong>Consequence:</strong> We cannot easily attribute &quot;which specific sentence&quot; in a 50-page
+      document caused the model to hallucinate.</li>
+  </ul>
+  <h4 id="b-chain-of-thought-vs-faithful-explanation">B. &quot;Chain of Thought&quot; vs. Faithful Explanation</h4>
+  <p>LLMs can generate their own explanations (Chain-of-Thought prompting).</p>
+  <ul>
+    <li><em>User:</em> &quot;Why is the sky blue?&quot;</li>
+    <li><em>AI:</em> &quot;Because Rayleigh scattering...&quot;</li>
+  </ul>
+  <p><strong>The Danger (Unfaithfulness):</strong></p>
+  <ul>
+    <li>Just because the AI <em>says</em> &quot;I chose X because of Y,&quot; doesn&#39;t mean the mathematical model
+      actually used Y.</li>
+    <li><strong>Rationalization:</strong> The model often makes up a plausible-sounding justification <em>after</em>
+      making the decision, rather than revealing its internal reasoning. This is <strong>Post-hoc
+        Rationalization</strong>, not Explanation.</li>
+  </ul>
+  <h4 id="c-polysemantic-neurons-superposition-">C. Polysemantic Neurons (Superposition)</h4>
+  <p>In a small CNN, Neuron #45 might detect &quot;Dog Ears.&quot; It has one job.
+    In an LLM, a single neuron is <strong>Polysemantic</strong> (Many meanings).</p>
+  <ul>
+    <li><strong>Superposition:</strong> To save space, the model packs multiple unrelated concepts into one neuron.</li>
+    <li><em>Example:</em> Neuron #1005 might fire for:<ol>
+        <li>The concept of &quot;Shakespeare.&quot;</li>
+        <li>The HTTP Error code &quot;404.&quot;</li>
+        <li>The color &quot;Turquoise.&quot;</li>
+      </ol>
+    </li>
+    <li><strong>XAI Failure:</strong> If you visualize this neuron, it makes no sense to a human.</li>
+  </ul>
+  <hr>
+  <h3 id="3-mechanistic-interpretability-the-new-frontier-">3. Mechanistic Interpretability (The New Frontier)</h3>
+  <p>Because standard tools failed, a new field called <strong>Mechanistic Interpretability</strong> (pioneered by
+    Anthropic/OpenAI) is emerging.</p>
+  <ul>
+    <li><strong>Goal:</strong> To reverse-engineer the LLM like a computer program (circuit).</li>
+    <li><strong>Induction Heads:</strong> Researchers found specific &quot;circuits&quot; in the Attention layers
+      responsible for copying text (e.g., if &quot;Harry&quot; appears, the Induction Head predicts &quot;Potter&quot;
+      next).</li>
+    <li><strong>Significance:</strong> This is a move towards &quot;White-box&quot; understanding of LLMs, but it is
+      extremely difficult and slow.</li>
+  </ul>
+  <hr>
+  <h3 id="4-visualizing-the-disconnect">4. Visualizing the Disconnect</h3>
+  <svg width="100%" height="350" xmlns="http://www.w3.org/2000/svg"
+    style="background:#fff; border: 1px solid #ddd; border-radius: 8px;">
+    <text x="300" y="30" text-anchor="middle" font-weight="bold">The Faithfulness Gap</text>
+
+    <rect x="50" y="50" width="200" height="250" fill="#e3f2fd" stroke="#2196f3" rx="5" />
+    <text x="150" y="80" text-anchor="middle" font-weight="bold" fill="#0d47a1">User Surface (CoT)</text>
+
+    <rect x="70" y="100" width="160" height="40" fill="#fff" stroke="#ccc" />
+    <text x="80" y="125" font-size="10">Q: Why pick option A?</text>
+
+    <rect x="70" y="150" width="160" height="80" fill="#e8f5e9" stroke="#4caf50" />
+    <text x="80" y="170" font-size="10" font-style="italic">&quot;I picked A because</text>
+    <text x="80" y="185" font-size="10" font-style="italic">it is the most logical</text>
+    <text x="80" y="200" font-size="10" font-style="italic">choice...&quot;</text>
+    <text x="150" y="225" text-anchor="middle" font-weight="bold" fill="#2e7d32">Plausible LIES?</text>
+
+    <rect x="350" y="50" width="200" height="250" fill="#333" stroke="#000" rx="5" />
+    <text x="450" y="80" text-anchor="middle" font-weight="bold" fill="#fff">Internal Mechanism</text>
+
+    <circle cx="400" cy="120" r="5" fill="#f1c40f" />
+    <circle cx="450" cy="120" r="5" fill="#f1c40f" />
+    <circle cx="500" cy="120" r="5" fill="#f1c40f" />
+
+    <line x1="400" y1="120" x2="450" y2="180" stroke="#555" stroke-width="1" />
+    <line x1="500" y1="120" x2="450" y2="180" stroke="#555" stroke-width="1" />
+
+    <circle cx="450" cy="180" r="10" fill="#e74c3c" />
+    <text x="450" y="210" text-anchor="middle" font-size="10" fill="#fff">Bias Neuron Activated</text>
+    <text x="450" y="225" text-anchor="middle" font-size="10" fill="#fff">(Pattern Matching)</text>
+
+    <line x1="250" y1="150" x2="350" y2="150" stroke="#c0392b" stroke-width="4" stroke-dasharray="5,5" />
+    <text x="300" y="140" text-anchor="middle" font-size="20" fill="#c0392b">≠</text>
+  </svg>
+
+  <hr>
+  <h3 id="5-evaluation-of-llm-explanations">5. Evaluation of LLM Explanations</h3>
+  <p>How do we check if an explanation is good?</p>
+  <ol>
+    <li><strong>Faithfulness:</strong> Does the explanation accurately reflect the true reasoning process?<ul>
+        <li><em>Test:</em> If the explanation says &quot;I ignored the first sentence,&quot; but masking the first
+          sentence changes the output, the explanation is unfaithful.</li>
+      </ul>
+    </li>
+    <li><strong>Plausibility:</strong> Does the explanation make sense to a human?<ul>
+        <li><em>Conflict:</em> Often, the true explanation (vector math) is not plausible to humans, and the plausible
+          explanation (CoT) is not faithful to the math.</li>
+      </ul>
+    </li>
+  </ol>
+  <hr>
+  <h3 id="6-exam-question-bank">6. Exam Question Bank</h3>
+  <p><strong>Q1 (Short - 2 Marks): What is &quot;Hallucination&quot; in the context of XAI for LLMs?</strong></p>
+  <blockquote>
+    <p><strong>Ans:</strong> It refers to the phenomenon where an LLM generates a confident, fluent, and
+      logical-sounding explanation that is factually incorrect or completely unrelated to the actual internal mechanisms
+      used to generate the prediction.</p>
+  </blockquote>
+  <p><strong>Q2 (5 Marks): Explain the concept of &quot;Polysemantic Neurons&quot; and why they make interpreting LLMs
+      difficult.</strong></p>
+  <blockquote>
+    <p><strong>Hint:</strong></p>
+    <ol>
+      <li><strong>Definition:</strong> A single neuron responding to multiple, unrelated concepts (e.g., Cats AND
+        Finance).</li>
+      <li><strong>Reason:</strong> The model compresses many concepts into limited neurons (Superposition).</li>
+      <li><strong>Difficulty:</strong> If you look at a highly active neuron, you cannot assign it a single label like
+        &quot;Dog Detector,&quot; making visualization confusing.</li>
+    </ol>
+  </blockquote>
+  <p><strong>Q3 (10 Marks): &quot;Chain of Thought (CoT) prompting serves as an explanation for LLMs.&quot; Critically
+      analyze this statement.</strong></p>
+  <blockquote>
+    <p><strong>Structure:</strong></p>
+    <ol>
+      <li><strong>Yes (User Utility):</strong> CoT helps users follow the logical steps (Step 1, Step 2, Step 3). It
+        improves trust and allows error checking.</li>
+      <li><strong>No (Technical Fidelity):</strong> CoT is just text generation. It is a post-hoc rationalization. The
+        model might have output &quot;Answer B&quot; because of a bias in training data, but the CoT will invent a
+        logical reason for it.</li>
+      <li><strong>Conclusion:</strong> CoT is useful for <em>reasoning</em> tasks but dangerous for
+        <em>audit/compliance</em> tasks because it can lie.</li>
+    </ol>
+  </blockquote>
+  <hr>
+  <h2 id="topic-8-visualization-tools-for-neural-networks">Topic 8: Visualization Tools for Neural Networks</h2>
+  <hr>
+  <h3 id="1-introduction-from-math-to-software">1. Introduction: From Math to Software</h3>
+  <p>We have learned the math behind Saliency Maps and Grad-CAM. However, coding these from scratch every time is
+    inefficient.
+    <strong>Visualization Tools</strong> are software libraries and dashboards that allow developers to inspect Deep
+    Neural Networks (DNNs) without writing complex boilerplate code.
+  </p>
+  <p><strong>Why do we need them?</strong></p>
+  <ol>
+    <li><strong>Debugging:</strong> Why is the loss not decreasing? (Check Gradients).</li>
+    <li><strong>Architecture Verification:</strong> Did I accidentally connect Layer 4 to Layer 2? (Check Graph).</li>
+    <li><strong>Interpretability:</strong> Which part of the image is the model looking at? (Check Heatmaps).</li>
+  </ol>
+  <hr>
+  <h3 id="2-key-visualization-tools">2. Key Visualization Tools</h3>
+  <h4 id="a-tensorboard-the-industry-standard-">A. TensorBoard (The Industry Standard)</h4>
+  <p>Developed by Google (TensorFlow team), but now works with PyTorch too.</p>
+  <ul>
+    <li><strong>Core Function:</strong> It tracks metrics <em>during training</em>.</li>
+    <li><strong>Key Features:</strong>
+      <ul>
+        <li><strong>Scalars:</strong> Plots Loss and Accuracy over epochs (Line charts).</li>
+        <li><strong>Graphs:</strong> Visualizes the computational graph (Nodes and Edges) of the model structure.</li>
+        <li><strong>Histograms:</strong> Shows the distribution of Weights and Biases. (Helps detect if neurons are
+          dying/zero).</li>
+        <li><strong>Embeddings:</strong> Visualizes high-dimensional vectors (like Word2Vec) in 3D space using
+          PCA/t-SNE.</li>
+      </ul>
+    </li>
+  </ul>
+  <h4 id="b-netron-the-architecture-viewer-">B. Netron (The Architecture Viewer)</h4>
+  <ul>
+    <li><strong>Purpose:</strong> To visualize the static structure of a saved model.</li>
+    <li><strong>How it works:</strong> You upload a model file (<code>.h5</code>, <code>.onnx</code>, <code>.pt</code>).
+      Netron renders a beautiful, zoomable flowchart of every layer, activation function, and connection.</li>
+    <li><strong>Use Case:</strong> &quot;I downloaded a pre-trained ResNet. I need to know the name of the last layer to
+      attach my Grad-CAM hook.&quot; $\to$ Open in Netron.</li>
+  </ul>
+  <h4 id="c-captum-pytorch-xai-library-">C. Captum (PyTorch XAI Library)</h4>
+  <ul>
+    <li><strong>Purpose:</strong> The official Model Interpretability library for PyTorch.</li>
+    <li><strong>Features:</strong> It implements almost every algorithm we studied in Unit IV:<ul>
+        <li>Integrated Gradients</li>
+        <li>Saliency Maps</li>
+        <li>DeepLIFT</li>
+        <li>Layer-wise Relevance Propagation (LRP)</li>
+        <li>Grad-CAM</li>
+      </ul>
+    </li>
+    <li><strong>Why it matters:</strong> It provides a unified API. You can switch from Saliency to IG with one line of
+      code.</li>
+  </ul>
+  <h4 id="d-the-what-if-tool-wit-">D. The What-If Tool (WIT)</h4>
+  <ul>
+    <li><strong>Purpose:</strong> Interactive sensitivity analysis.</li>
+    <li><strong>Features:</strong>
+      <ul>
+        <li><strong>Counterfactuals:</strong> Edit a data point (e.g., change &quot;Male&quot; to &quot;Female&quot;)
+          and see the prediction flip instantly.</li>
+        <li><strong>Fairness:</strong> Slice data by groups to check for bias.</li>
+        <li><strong>Confusion Matrix:</strong> Click on a False Positive to see <em>why</em> it was misclassified.</li>
+      </ul>
+    </li>
+  </ul>
+  <hr>
+  <h3 id="3-comparison-of-tools-exam-key-">3. Comparison of Tools (Exam Key)</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align:left">Tool</th>
+        <th style="text-align:left">Primary Use</th>
+        <th style="text-align:left">Interface</th>
+        <th style="text-align:left">Supported Frameworks</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align:left"><strong>TensorBoard</strong></td>
+        <td style="text-align:left">Training Monitoring</td>
+        <td style="text-align:left">Dashboard (Web)</td>
+        <td style="text-align:left">TensorFlow, PyTorch</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Netron</strong></td>
+        <td style="text-align:left">Structure Inspection</td>
+        <td style="text-align:left">Desktop App / Web</td>
+        <td style="text-align:left">ONNX, Keras, PyTorch, TF</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Captum</strong></td>
+        <td style="text-align:left">Algorithm Implementation (IG, LRP)</td>
+        <td style="text-align:left">Python Library (Code)</td>
+        <td style="text-align:left">PyTorch</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>tf-explain</strong></td>
+        <td style="text-align:left">CNN Visualizations (Grad-CAM)</td>
+        <td style="text-align:left">Python Library</td>
+        <td style="text-align:left">TensorFlow/Keras</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>BertViz</strong></td>
+        <td style="text-align:left">Attention Visualization</td>
+        <td style="text-align:left">Jupyter Widget</td>
+        <td style="text-align:left">Transformers (HuggingFace)</td>
+      </tr>
+    </tbody>
+  </table>
+  <hr>
+  <h3 id="4-visualizing-high-dimensional-data-t-sne-pca-">4. Visualizing High-Dimensional Data (t-SNE &amp; PCA)</h3>
+  <p>Neural Networks operate in high dimensions (e.g., 512 dimensions for a face embedding). Humans can only see 2D or
+    3D.
+    To visualize what the network &quot;knows,&quot; we use dimensionality reduction.</p>
+  <h4 id="t-sne-t-distributed-stochastic-neighbor-embedding-">t-SNE (t-Distributed Stochastic Neighbor Embedding)</h4>
+  <ul>
+    <li><strong>Goal:</strong> Group similar items together in 2D.</li>
+    <li><strong>Result:</strong> If the network has learned well, all &quot;Cat&quot; images will form a cluster in the
+      top-right, and &quot;Dog&quot; images in the bottom-left.</li>
+    <li><strong>Interpretation:</strong>
+      <ul>
+        <li><strong>Tight Clusters:</strong> The model is confident and separates classes well.</li>
+        <li><strong>Mixed/Messy Clouds:</strong> The model is confused; it cannot distinguish classes.</li>
+      </ul>
+    </li>
+  </ul>
+  <hr>
+  <h3 id="5-exam-question-bank">5. Exam Question Bank</h3>
+  <p><strong>Q1 (Short - 2 Marks): What is the primary purpose of Netron?</strong></p>
+  <blockquote>
+    <p><strong>Ans:</strong> Netron is a viewer for neural network, deep learning, and machine learning models. Its
+      primary purpose is to visualize the architecture (layers, dimensions, and connections) of saved models (like
+      .onnx, .h5, .pb) in a graphical flowchart format.</p>
+  </blockquote>
+  <p><strong>Q2 (5 Marks): Explain how t-SNE helps in interpreting Deep Learning models.</strong></p>
+  <blockquote>
+    <p><strong>Hint:</strong></p>
+    <ol>
+      <li><strong>Problem:</strong> Neural Nets produce high-dimensional vectors (Embeddings) that are impossible to
+        visualize.</li>
+      <li><strong>Solution:</strong> t-SNE reduces these dimensions to 2D or 3D while preserving local similarities.
+      </li>
+      <li><strong>Insight:</strong> By plotting these 2D points, we can see &quot;Clusters.&quot; If similar objects
+        (e.g., different photos of the same person) cluster together, the model has learned good features.</li>
+    </ol>
+  </blockquote>
+  <p><strong>Q3 (10 Marks): Compare TensorBoard and Captum in the context of XAI.</strong></p>
+  <blockquote>
+    <p><strong>Structure:</strong></p>
+    <ol>
+      <li><strong>TensorBoard:</strong> Focuses on the <em>Training Process</em> (Loss curves, Weight histograms). It
+        helps debug the <em>optimization</em>. It has limited &quot;Explanation&quot; features (mostly Embeddings).</li>
+      <li><strong>Captum:</strong> Focuses on the <em>Prediction Explanation</em> (Feature Attribution). It implements
+        algorithms like Integrated Gradients and DeepLIFT. It helps explain <em>why</em> a specific prediction was made.
+      </li>
+      <li><strong>Conclusion:</strong> Use TensorBoard to build the model; use Captum to explain the model.</li>
+    </ol>
+  </blockquote>
+  <hr>
+</body>
+
+</html>

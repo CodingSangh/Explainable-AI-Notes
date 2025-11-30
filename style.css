@@ -1,0 +1,232 @@
+/* --- Global Variables & Reset --- */
+:root {
+    --primary-color: #2c3e50;   /* Academic Dark Blue */
+    --accent-color: #3498db;    /* Highlight Blue */
+    --text-color: #333333;      /* Dark Gray for text */
+    --bg-color: #f9f9f9;        /* Light Gray background */
+    --white: #ffffff;
+    --code-bg: #f4f4f4;
+    --border-color: #ddd;
+    --quote-bg: #e8f4f8;        /* Light Blue for Exam Answers */
+    --quote-border: #2980b9;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--bg-color);
+    margin: 0;
+    padding: 0;
+}
+
+/* --- Layout Container --- */
+/* This centers all direct children (h1, p, div, etc.) */
+body > * {
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+/* --- Typography --- */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--primary-color);
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+}
+
+h1 {
+    font-size: 2.5rem;
+    text-align: center;
+    border-bottom: 3px solid var(--accent-color);
+    padding-bottom: 15px;
+    margin-top: 40px;
+    background-color: var(--white);
+    padding-top: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    border-radius: 8px;
+}
+
+h2 {
+    font-size: 1.8rem;
+    border-left: 5px solid var(--accent-color);
+    padding-left: 15px;
+    background-color: #fff;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-radius: 0 5px 5px 0;
+}
+
+h3 {
+    font-size: 1.4rem;
+    color: #444;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+p {
+    margin-bottom: 1em;
+    text-align: justify;
+}
+
+/* --- Horizontal Rules --- */
+hr {
+    border: 0;
+    height: 1px;
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0));
+    margin: 40px 0;
+}
+
+/* --- Links --- */
+a {
+    color: var(--accent-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* --- Lists --- */
+ul, ol {
+    margin-bottom: 1em;
+    padding-left: 2em;
+}
+
+li {
+    margin-bottom: 0.5em;
+}
+
+/* --- Tables (FIXED ALIGNMENT) --- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 25px auto; /* 'auto' forces horizontal centering */
+    background-color: var(--white);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+th, td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    background-color: var(--primary-color);
+    color: var(--white);
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9em;
+    letter-spacing: 0.5px;
+}
+
+tr:nth-child(even) {
+    background-color: #f8f8f8;
+}
+
+tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* --- SVGs & Images (Centered) --- */
+svg, img {
+    display: block;
+    width: 100%;
+    max-width: 650px !important; /* Constrain width to prevent huge diagrams */
+    height: auto;
+    margin: 40px auto; /* Centers the element */
+    background-color: var(--white);
+    border: 1px solid #eee;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+/* --- Code Blocks --- */
+code {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    background-color: var(--code-bg);
+    padding: 3px 6px;
+    border-radius: 4px;
+    color: #c0392b; 
+    font-size: 0.9em;
+    border: 1px solid #e1e1e1;
+}
+
+pre {
+    background-color: #2d2d2d;
+    color: #f8f8f2;
+    padding: 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 20px auto; /* Center code blocks */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+pre code {
+    background-color: transparent;
+    color: inherit;
+    border: none;
+    padding: 0;
+}
+
+/* --- Blockquotes / Exam Answers (Centered) --- */
+blockquote {
+    margin: 30px auto; /* Centers the box */
+    padding: 20px 25px;
+    background-color: var(--quote-bg);
+    border-left: 6px solid var(--quote-border);
+    border-radius: 5px;
+    font-style: normal;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    max-width: 850px;
+}
+
+blockquote p {
+    margin: 0;
+}
+
+blockquote strong {
+    color: var(--primary-color);
+}
+
+/* --- MathJax --- */
+mjx-container {
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    margin: 10px 0;
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 768px) {
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.6rem; }
+    
+    /* Allow tables to scroll on phones instead of breaking layout */
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    body > * {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    blockquote {
+        margin-left: 0;
+        margin-right: 0;
+    }
+}

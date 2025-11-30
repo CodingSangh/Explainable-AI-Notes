@@ -1,0 +1,792 @@
+<html>
+
+<head>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+  <h1 id="unit-v-applications-evaluation-and-challenges-in-xai">Unit V: Applications, Evaluation, and Challenges in XAI
+  </h1>
+  <hr>
+  <h2 id="topic-1-xai-in-healthcare-finance-autonomous-systems">Topic 1: XAI in healthcare, finance, and autonomous systems</h2>
+  <hr>
+  <h3 id="1-introduction-high-stakes-ai">1. Introduction: High-Stakes AI</h3>
+  <p>We do not need XAI for a &quot;Movie Recommendation System&quot; (if Netflix is wrong, you just waste 2 hours).
+    <br>We <strong>need</strong> XAI for <strong>High-Stakes Decisions</strong> where errors lead to:</p>
+  <ol>
+    <li><strong>Death/Injury</strong> (Healthcare, Autonomous Driving).</li>
+    <li><strong>Financial Ruin</strong> (Banking, Finance).</li>
+    <li><strong>Legal Consequences</strong> (Bias, Discrimination).</li>
+  </ol>
+  <hr>
+  <h3 id="2-xai-in-healthcare-medical-ai-">2. XAI in Healthcare (Medical AI)</h3>
+  <p><strong>The Goal:</strong> AI should be a &quot;Decision Support System&quot; for doctors, not a replacement.</p>
+  <h4 id="a-key-use-cases">A. Key Use Cases</h4>
+  <ol>
+    <li><strong>Medical Imaging (Radiology):</strong>
+      <ul>
+        <li><em>Task:</em> Detecting tumors in X-rays or MRI scans.</li>
+        <li><em>Model:</em> Deep CNNs (Black Box).</li>
+        <li><em>XAI Role:</em> <strong>Saliency Maps / Grad-CAM.</strong></li>
+        <li><em>Scenario:</em> The AI predicts &quot;Malignant.&quot; The doctor asks &quot;Why?&quot; The XAI
+          highlights the specific cluster of calcified cells.</li>
+        <li><em>Benefit:</em> Prevents &quot;Clever Hans&quot; errors (e.g., detecting a ruler on the skin instead of
+          the tumor).</li>
+      </ul>
+    </li>
+    <li><strong>Electronic Health Records (EHR):</strong>
+      <ul>
+        <li><em>Task:</em> Predicting patient readmission risk.</li>
+        <li><em>Model:</em> Recurrent Neural Networks (RNN/LSTM) on text notes.</li>
+        <li><em>XAI Role:</em> <strong>Attention Mechanisms / LIME.</strong></li>
+        <li><em>Scenario:</em> AI predicts &quot;High Risk.&quot; XAI highlights keywords like <em>&quot;History of
+            heart failure&quot;</em> and <em>&quot;High blood pressure&quot;</em>.</li>
+        <li><em>Benefit:</em> Doctors can prioritize care based on specific risk factors.</li>
+      </ul>
+    </li>
+  </ol>
+  <h4 id="b-challenges">B. Challenges</h4>
+  <ul>
+    <li><strong>Fidelity:</strong> If the XAI is slightly wrong, a patient could die.</li>
+    <li><strong>Correlated Features:</strong> Biological markers are highly correlated (e.g., BMI and Diabetes). XAI
+      tools (like Feature Importance) struggle with this.</li>
+  </ul>
+  <hr>
+  <h3 id="3-xai-in-finance-fintech-">3. XAI in Finance (FinTech)</h3>
+  <p><strong>The Goal:</strong> Trust, Fairness, and Regulatory Compliance.</p>
+  <h4 id="a-key-use-cases">A. Key Use Cases</h4>
+  <ol>
+    <li><strong>Credit Scoring (Loan Approval):</strong>
+      <ul>
+        <li><em>Task:</em> Decide whether to lend money.</li>
+        <li><em>Model:</em> Gradient Boosting (XGBoost) or Random Forest.</li>
+        <li><em>XAI Role:</em> <strong>SHAP / Counterfactuals.</strong></li>
+        <li><em>Scenario:</em> Loan Denied.<ul>
+            <li><em>SHAP:</em> &quot;Your debt-to-income ratio (-0.4) was the main negative factor.&quot;</li>
+            <li><em>Counterfactual:</em> &quot;If you pay off \$2,000 of debt, you will be approved.&quot; (Actionable
+              Recourse).</li>
+          </ul>
+        </li>
+        <li><em>Benefit:</em> Compliance with <strong>GDPR</strong> (Right to Explanation) and <strong>ECOA</strong>
+          (Equal Credit Opportunity Act).</li>
+      </ul>
+    </li>
+    <li><strong>Fraud Detection:</strong>
+      <ul>
+        <li><em>Task:</em> Flag suspicious credit card transactions.</li>
+        <li><em>Model:</em> Anomaly Detection (Autoencoders).</li>
+        <li><em>XAI Role:</em> <strong>Anchors / Local Outlier Factor.</strong></li>
+        <li><em>Scenario:</em> &quot;Transaction blocked because Location=Foreign AND Amount &gt; Avg * 5.&quot;</li>
+      </ul>
+    </li>
+  </ol>
+  <h4 id="b-challenges">B. Challenges</h4>
+  <ul>
+    <li><strong>Adversarial Attacks:</strong> If fraudsters know exactly how the AI works (via XAI), they can game the
+      system (e.g., transfer \$9,999 instead of \$10,000 to avoid a rule).</li>
+  </ul>
+  <hr>
+  <h3 id="4-xai-in-autonomous-systems-self-driving-cars-">4. XAI in Autonomous Systems (Self-Driving Cars)</h3>
+  <p><strong>The Goal:</strong> Safety, Debugging, and Liability.</p>
+  <h4 id="a-key-use-cases">A. Key Use Cases</h4>
+  <ol>
+    <li><strong>Perception (Object Detection):</strong>
+      <ul>
+        <li><em>Task:</em> Identifying pedestrians, signs, and lanes.</li>
+        <li><em>XAI Role:</em> <strong>Real-time Saliency / Object Localization.</strong></li>
+        <li><em>Scenario:</em> The car brakes suddenly.<ul>
+            <li><em>Without XAI:</em> &quot;Why did it stop?&quot; (Panic).</li>
+            <li><em>With XAI:</em> Dashboard shows a red box around a small child running behind a parked car. (Trust).
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><strong>Motion Planning (Decision Making):</strong>
+      <ul>
+        <li><em>Task:</em> Changing lanes or turning.</li>
+        <li><em>XAI Role:</em> <strong>Rule Extraction / Logic Trees.</strong></li>
+        <li><em>Scenario:</em> Accident occurs.</li>
+        <li><em>Liability:</em> Did the AI fail to see the car (Sensor issue) or did it decide to hit the car to avoid a
+          pedestrian (Ethical dilemma)? XAI provides the <strong>Black Box Recorder</strong> data for legal auditing.
+        </li>
+      </ul>
+    </li>
+  </ol>
+  <h4 id="b-visualizing-the-car-s-mind-">B. Visualizing the &quot;Car&#39;s Mind&quot;</h4>
+  <svg width="100%" height="300" xmlns="http://www.w3.org/2000/svg"
+    style="background:#fff; border: 1px solid #ddd; border-radius: 8px;">
+    <rect x="50" y="50" width="500" height="200" fill="#ddd" stroke="#333" />
+    <line x1="50" y1="150" x2="550" y2="150" stroke="#fff" stroke-width="4" stroke-dasharray="20,20" />
+
+    <rect x="80" y="160" width="80" height="40" fill="#3498db" rx="5" />
+    <text x="120" y="185" text-anchor="middle" fill="white" font-size="10">Self-Driving Car</text>
+
+    <rect x="400" y="100" width="60" height="40" fill="#e74c3c" rx="5" />
+    <text x="430" y="125" text-anchor="middle" fill="white" font-size="10">Other Car</text>
+
+    <rect x="390" y="90" width="80" height="60" fill="none" stroke="#2ecc71" stroke-width="3" />
+    <text x="430" y="80" text-anchor="middle" fill="#2ecc71" font-weight="bold">Detected (99%)</text>
+
+    <circle cx="430" cy="120" r="50" fill="red" opacity="0.3" />
+
+    <rect x="150" y="260" width="300" height="30" fill="#fff" stroke="#333" rx="5" />
+    <text x="300" y="280" text-anchor="middle" font-size="12">Action: BRAKE. Reason: Obstacle in Path.</text>
+  </svg>
+
+  <hr>
+  <h3 id="5-exam-question-bank">5. Exam Question Bank</h3>
+  <p><strong>Q1 (Short - 2 Marks): Give two reasons why XAI is critical in the banking sector.</strong></p>
+  <blockquote>
+    <p><strong>Ans:</strong></p>
+    <ol>
+      <li><strong>Regulatory Compliance:</strong> To comply with laws like GDPR and ECOA which mandate explanations for
+        adverse decisions (loan denial).</li>
+      <li><strong>Trust &amp; Fairness:</strong> To prove to customers and auditors that the model is not discriminating
+        based on race, gender, or location (Redlining).</li>
+    </ol>
+  </blockquote>
+  <p><strong>Q2 (5 Marks): Discuss the role of Counterfactual Explanations in the context of loan approval.</strong></p>
+  <blockquote>
+    <p><strong>Hint:</strong></p>
+    <ul>
+      <li>Explain that telling a customer &quot;You were rejected because Score=0.4&quot; is useless.</li>
+      <li>A Counterfactual (&quot;If you increase salary by 5k, you will be approved&quot;) provides <strong>Actionable
+          Recourse</strong>. It empowers the user to fix the situation.</li>
+    </ul>
+  </blockquote>
+  <p><strong>Q3 (10 Marks): &quot;In Healthcare, a false explanation is worse than no explanation.&quot; Critically
+      analyze this statement.</strong></p>
+  <blockquote>
+    <p><strong>Structure:</strong></p>
+    <ol>
+      <li><strong>Context:</strong> Doctors rely on AI for life-or-death decisions.</li>
+      <li><strong>The Danger:</strong> If an XAI tool (like Saliency) highlights a &quot;healthy&quot; part of the lung
+        and says &quot;No Tumor&quot; (False Negative explanation), the doctor might trust it and miss the cancer.</li>
+      <li><strong>Automation Bias:</strong> Humans tend to over-trust machines. A misleading explanation validates this
+        bias.</li>
+      <li><strong>Conclusion:</strong> High-fidelity metrics are essential in medical XAI.</li>
+    </ol>
+  </blockquote>
+  <hr>
+  <h2 id="topic-2-human-centric-evaluations-of-explanations">Topic 2: Human-Centric Evaluations of Explanations</h2>
+  <hr>
+  <h3 id="1-introduction-the-goodness-of-an-explanation">1. Introduction: The &quot;Goodness&quot; of an Explanation
+  </h3>
+  <p>How do we define a &quot;good&quot; explanation?</p>
+  <ul>
+    <li>Is it one that is mathematically perfect? (<strong>Fidelity</strong>)</li>
+    <li>Is it one that is easy to read? (<strong>Comprehensibility</strong>)</li>
+    <li>Is it one that helps the user finish a task? (<strong>Usability</strong>)</li>
+  </ul>
+  <p>Often, these goals conflict. A highly faithful explanation (showing 1 million weights) is incomprehensible. A
+    highly comprehensible explanation (showing 3 rules) might be unfaithful (oversimplified).</p>
+  <hr>
+  <h3 id="2-the-taxonomy-of-evaluation-doshi-velez-kim-framework-">2. The Taxonomy of Evaluation (Doshi-Velez &amp; Kim
+    Framework)</h3>
+  <p>This is the standard academic framework for evaluating XAI.</p>
+  <h4 id="level-1-application-grounded-evaluation-real-task-real-humans-">Level 1: Application-Grounded Evaluation (Real
+    Task, Real Humans)</h4>
+  <ul>
+    <li><strong>Who:</strong> Domain Experts (Doctors, Pilots).</li>
+    <li><strong>Task:</strong> The actual real-world task (e.g., Diagnosing a patient with the AI).</li>
+    <li><strong>Metric:</strong> Does the explanation improve the <em>end result</em>? (e.g., Did patient outcomes
+      improve? Did the doctor make fewer errors?).</li>
+    <li><strong>Cost:</strong> Very High (Doctors are expensive and busy).</li>
+  </ul>
+  <h4 id="level-2-human-grounded-evaluation-simple-task-real-humans-">Level 2: Human-Grounded Evaluation (Simple Task,
+    Real Humans)</h4>
+  <ul>
+    <li><strong>Who:</strong> Laypeople (e.g., Mechanical Turk workers, Students).</li>
+    <li><strong>Task:</strong> A simplified version of the task (e.g., &quot;Look at these two explanations and pick the
+      better one&quot;).</li>
+    <li><strong>Metric:</strong> Subjective satisfaction, speed of understanding.</li>
+    <li><strong>Cost:</strong> Medium.</li>
+  </ul>
+  <h4 id="level-3-functionally-grounded-evaluation-no-humans-">Level 3: Functionally-Grounded Evaluation (No Humans)
+  </h4>
+  <ul>
+    <li><strong>Who:</strong> Computers (Proxy metrics).</li>
+    <li><strong>Task:</strong> Mathematical verification.</li>
+    <li><strong>Metric:</strong> Fidelity scores, Sparsity (count of features).</li>
+    <li><strong>Cost:</strong> Low (Instant).</li>
+  </ul>
+  <hr>
+  <h3 id="3-key-metrics-for-human-evaluation">3. Key Metrics for Human Evaluation</h3>
+  <h4 id="a-comprehensibility-do-they-understand-it-">A. Comprehensibility (Do they understand it?)</h4>
+  <p><strong>Definition:</strong> The degree to which a human can understand the explanation and build a correct mental
+    model of the AI.</p>
+  <p><strong>How to Measure:</strong></p>
+  <ol>
+    <li><strong>Forward Simulation:</strong> Show the human the <em>Explanation</em> (not the prediction) and ask:
+      <em>&quot;Based on this explanation, what do you think the model will predict?&quot;</em>
+      <ul>
+        <li>If they guess correctly, they understand the model.</li>
+      </ul>
+    </li>
+    <li><strong>Cognitive Load:</strong> Measure the time it takes for the user to read the explanation. (Faster is
+      usually better).</li>
+    <li><strong>Subjective Rating:</strong> &quot;On a scale of 1-5, how confusing was this?&quot;</li>
+  </ol>
+  <h4 id="b-usability-utility-is-it-useful-">B. Usability / Utility (Is it useful?)</h4>
+  <p><strong>Definition:</strong> Does the explanation help the user achieve a specific goal (like debugging or
+    compliance)?</p>
+  <p><strong>How to Measure:</strong></p>
+  <ol>
+    <li><strong>Task Performance:</strong> Compare two groups. Group A has AI + XAI. Group B has AI only. Who performs
+      the task faster/better?</li>
+    <li><strong>Trust Calibration:</strong>
+      <ul>
+        <li>Show users an <em>incorrect</em> prediction with an explanation.</li>
+        <li>If users <strong>reject</strong> the AI&#39;s wrong advice because the explanation looked fishy, the XAI is
+          useful (it calibrated trust).</li>
+        <li>If users blindly accept it, the XAI failed.</li>
+      </ul>
+    </li>
+  </ol>
+  <h4 id="c-fidelity-vs-plausibility-the-trap-">C. Fidelity vs. Plausibility (The Trap)</h4>
+  <p>This is a critical distinction for exams.</p>
+  <ul>
+    <li><strong>Fidelity (Faithfulness):</strong> Does the explanation accurately reflect the Black Box?<ul>
+        <li><em>Test:</em> If I remove the features the explanation says are &quot;Important,&quot; does the model
+          prediction change drastically? (If yes $\to$ High Fidelity).</li>
+      </ul>
+    </li>
+    <li><strong>Plausibility (Persuasiveness):</strong> Does the explanation <em>look</em> reasonable to a human?<ul>
+        <li><em>Test:</em> User surveys (&quot;Does this make sense?&quot;).</li>
+      </ul>
+    </li>
+    <li><strong>The Danger:</strong> A cheating model might produce <strong>Plausible but Unfaithful</strong>
+      explanations to trick users. (e.g., A hiring AI says &quot;Rejected due to Experience&quot; to look fair, but
+      actually rejected due to &quot;Gender&quot;).</li>
+  </ul>
+  <hr>
+  <h3 id="4-visualizing-the-evaluation-hierarchy">4. Visualizing the Evaluation Hierarchy</h3>
+  <svg width="100%" height="350" xmlns="http://www.w3.org/2000/svg"
+    style="background:#fff; border: 1px solid #ddd; border-radius: 8px;">
+    <polygon points="300,50 100,300 500,300" fill="#e3f2fd" stroke="#2196f3" stroke-width="2" />
+
+    <line x1="220" y1="150" x2="380" y2="150" stroke="#2196f3" stroke-width="2" />
+    <text x="300" y="110" text-anchor="middle" font-weight="bold" fill="#0d47a1">1. Application Grounded</text>
+    <text x="300" y="130" text-anchor="middle" font-size="10">(Real Doctors / Real Task)</text>
+
+    <line x1="140" y1="240" x2="460" y2="240" stroke="#2196f3" stroke-width="2" />
+    <text x="300" y="190" text-anchor="middle" font-weight="bold" fill="#1565c0">2. Human Grounded</text>
+    <text x="300" y="210" text-anchor="middle" font-size="10">(Laypeople / Surveys)</text>
+
+    <text x="300" y="270" text-anchor="middle" font-weight="bold" fill="#1976d2">3. Functionally Grounded</text>
+    <text x="300" y="290" text-anchor="middle" font-size="10">(No Humans / Math Metrics)</text>
+
+    <line x1="550" y1="300" x2="550" y2="50" stroke="#e74c3c" stroke-width="3" marker-end="url(#arrowRed)" />
+    <text x="560" y="180" text-anchor="middle" transform="rotate(90 560,180)" fill="#e74c3c">Cost &amp; Difficulty
+      Increases</text>
+
+    <defs>
+      <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto"
+        markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#e74c3c" />
+      </marker>
+    </defs>
+  </svg>
+
+  <hr>
+  <h3 id="5-quantitative-metrics-for-explainability">5. Quantitative Metrics for Explainability</h3>
+  <p>While this topic focuses on Human-centric, exams often ask for the metrics used to measure them.</p>
+  <ol>
+    <li><strong>Explanation Size (Sparsity):</strong> Count of features. (Fewer = More Comprehensible).</li>
+    <li><strong>Stability (Robustness):</strong> If I change the input slightly, does the explanation change? (Stable =
+      Better Trust).</li>
+    <li><strong>Faithfulness Score:</strong> The correlation between &quot;Feature Importance weights&quot; and the
+      &quot;Drop in Accuracy when those features are removed.&quot;</li>
+  </ol>
+  <hr>
+  <h3 id="6-exam-question-bank">6. Exam Question Bank</h3>
+  <p><strong>Q1 (Short - 2 Marks): What is the difference between &quot;Fidelity&quot; and
+      &quot;Plausibility&quot;?</strong></p>
+  <blockquote>
+    <p><strong>Ans:</strong></p>
+    <ul>
+      <li><strong>Fidelity (Faithfulness):</strong> How accurately the explanation represents the true internal decision
+        process of the model. (Objective truth).</li>
+      <li><strong>Plausibility:</strong> How convincing or logical the explanation appears to a human user. (Subjective
+        feeling).</li>
+      <li><em>Note:</em> An explanation can be plausible but unfaithful (a lie).</li>
+    </ul>
+  </blockquote>
+  <p><strong>Q2 (5 Marks): Describe the &quot;Forward Simulation&quot; test for evaluating comprehensibility.</strong>
+  </p>
+  <blockquote>
+    <p><strong>Hint:</strong></p>
+    <ol>
+      <li>The setup: Don&#39;t show the user the prediction. Show them only the Input + Explanation.</li>
+      <li>The test: Ask the user to <em>predict</em> what the AI will do.</li>
+      <li>The logic: If the explanation is good (comprehensible), the user should be able to simulate the AI&#39;s brain
+        and get the right answer.</li>
+    </ol>
+  </blockquote>
+  <p><strong>Q3 (10 Marks): Explain the Doshi-Velez &amp; Kim taxonomy for XAI evaluation.</strong></p>
+  <blockquote>
+    <p><strong>Structure:</strong></p>
+    <ol>
+      <li>Draw the pyramid (Application, Human, Functionally grounded).</li>
+      <li><strong>Application:</strong> Real experts, real stakes. Best but expensive.</li>
+      <li><strong>Human:</strong> Laypeople, simplified tasks. Good for general usability testing.</li>
+      <li><strong>Functional:</strong> Proxy metrics (sparsity/fidelity). Fast but might not reflect human needs.</li>
+    </ol>
+  </blockquote>
+  <hr>
+  <h2 id="topic-3-quantitative-metrics-for-explainability">Topic 3: Quantitative Metrics for Explainability</h2>
+  <hr>
+  <h3 id="1-introduction-objective-evaluation">1. Introduction: Objective Evaluation</h3>
+  <p>While human evaluation is the &quot;Gold Standard,&quot; it is slow, expensive, and subjective.
+    <strong>Quantitative Metrics</strong> (Functionally-grounded evaluation) allow us to benchmark XAI tools
+    mathematically.
+  </p>
+  <p>We answer questions like:</p>
+  <ul>
+    <li>&quot;Is SHAP more faithful than LIME?&quot;</li>
+    <li>&quot;Is this explanation stable or random?&quot;</li>
+  </ul>
+  <p>The three pillars of quantitative evaluation are <strong>Fidelity</strong>, <strong>Sparsity</strong>, and
+    <strong>Stability</strong>.</p>
+  <hr>
+  <h3 id="2-metric-1-fidelity-faithfulness-">2. Metric 1: Fidelity (Faithfulness)</h3>
+  <p><strong>Definition:</strong> Fidelity measures how accurately the explanation reflects the true behavior of the
+    Black Box model.</p>
+  <ul>
+    <li><em>Ideally:</em> If the explanation says &quot;Feature X is important,&quot; removing Feature X should destroy
+      the model&#39;s accuracy.</li>
+  </ul>
+  <h4 id="how-to-measure-the-deletion-game-perturbation-analysis-">How to Measure: The &quot;Deletion Game&quot;
+    (Perturbation Analysis)</h4>
+  <p>This is the standard industry test.</p>
+  <ol>
+    <li><strong>Rank:</strong> Sort features by their &quot;Importance Score&quot; (given by SHAP/LIME).</li>
+    <li><strong>Delete:</strong> Iteratively remove (mask) the top features one by one.</li>
+    <li><strong>Predict:</strong> Check the model&#39;s output score after each deletion.</li>
+    <li><strong>Curve:</strong> Plot the drop in score.</li>
+  </ol>
+  <p><strong>Interpretation:</strong></p>
+  <ul>
+    <li><strong>Steep Drop:</strong> The explanation is <strong>Faithful</strong>. It correctly identified the drivers
+      of the prediction.</li>
+    <li><strong>Flat Line:</strong> The explanation is <strong>Unfaithful</strong>. It pointed to features that
+      didn&#39;t actually matter.</li>
+  </ul>
+  <h4 id="visualizing-the-deletion-curve-area-under-curve-">Visualizing the Deletion Curve (Area Under Curve)</h4>
+  <svg width="100%" height="350" xmlns="http://www.w3.org/2000/svg"
+    style="background:#fff; border: 1px solid #ddd; border-radius: 8px;">
+    <line x1="50" y1="300" x2="550" y2="300" stroke="#333" stroke-width="2" />
+    <line x1="50" y1="300" x2="50" y2="50" stroke="#333" stroke-width="2" />
+
+    <text x="300" y="340" text-anchor="middle" font-family="Arial">Features Removed (Most Important First)</text>
+    <text x="20" y="175" text-anchor="middle" font-family="Arial" transform="rotate(-90 20,175)">Model Accuracy /
+      Score</text>
+
+    <path d="M 50,50 L 100,200 L 200,280 L 550,290" fill="none" stroke="#27ae60" stroke-width="3" />
+    <text x="120" y="220" font-weight="bold" fill="#27ae60">High Fidelity (SHAP)</text>
+    <text x="120" y="235" font-size="10" fill="#27ae60">Score crashes immediately</text>
+
+    <path d="M 50,50 L 300,70 L 450,150 L 550,200" fill="none" stroke="#c0392b" stroke-width="3" />
+    <text x="350" y="60" font-weight="bold" fill="#c0392b">Low Fidelity (Random)</text>
+    <text x="350" y="75" font-size="10" fill="#c0392b">Score stays high (Wrong features)</text>
+
+    <line x1="50" y1="50" x2="550" y2="50" stroke="#ccc" stroke-dasharray="5,5" />
+    <text x="30" y="55" font-size="10">1.0</text>
+    <text x="30" y="300" font-size="10">0.0</text>
+  </svg>
+
+  <hr>
+  <h3 id="3-metric-2-sparsity-complexity-">3. Metric 2: Sparsity (Complexity)</h3>
+  <p><strong>Definition:</strong> Sparsity measures the &quot;conciseness&quot; of an explanation. Humans have limited
+    cognitive capacity; they cannot process 500 features.</p>
+  <ul>
+    <li>A &quot;Good&quot; explanation uses the <strong>minimum</strong> number of features necessary.</li>
+  </ul>
+  <h4 id="how-to-measure-">How to Measure:</h4>
+  <ol>
+    <li><strong>L0 Norm:</strong> Simply count the number of non-zero features in the explanation.<ul>
+        <li>$Sparsity = \sum \mathbb{I}(\phi_i \neq 0)$</li>
+      </ul>
+    </li>
+    <li><strong>Entropy:</strong> Measures the spread of importance.<ul>
+        <li>Low Entropy = Focused on a few features (Good).</li>
+        <li>High Entropy = Importance spread across everything (Bad/Confusing).</li>
+      </ul>
+    </li>
+  </ol>
+  <hr>
+  <h3 id="4-metric-3-stability-robustness-">4. Metric 3: Stability (Robustness)</h3>
+  <p><strong>Definition:</strong> Similar inputs should yield similar explanations.</p>
+  <ul>
+    <li>If input $x$ is <code>Income=50k</code>, and input $x&#39;$ is <code>Income=50,001</code>, the explanations
+      should be identical.</li>
+    <li><strong>LIME</strong> often fails this test (Low Stability) due to random sampling. <strong>SHAP</strong>
+      usually passes (High Stability).</li>
+  </ul>
+  <h4 id="the-math-lipschitz-continuity-">The Math (Lipschitz Continuity)</h4>
+  <p>We measure the ratio of &quot;Change in Explanation&quot; to &quot;Change in Input.&quot;</p>
+  <p>$$L = \frac{|| E(x) - E(x&#39;) ||}{|| x - x&#39; ||}$$</p>
+  <ul>
+    <li><strong>$E(x)$:</strong> The Explanation vector.</li>
+    <li><strong>Goal:</strong> We want $L$ to be <strong>Low</strong>. (A small change in input causes a small change in
+      explanation).</li>
+    <li><strong>High $L$:</strong> Means the explanation is jittery and untrustworthy.</li>
+  </ul>
+  <hr>
+  <h3 id="5-comparison-of-metrics">5. Comparison of Metrics</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align:left">Metric</th>
+        <th style="text-align:left">What it measures</th>
+        <th style="text-align:left">Why we want it</th>
+        <th style="text-align:left">How to optimize</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align:left"><strong>Fidelity</strong></td>
+        <td style="text-align:left">Truthfulness</td>
+        <td style="text-align:left">To ensure the explanation isn&#39;t lying.</td>
+        <td style="text-align:left">Use SHAP / IG.</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Sparsity</strong></td>
+        <td style="text-align:left">Conciseness</td>
+        <td style="text-align:left">To prevent information overload.</td>
+        <td style="text-align:left">Use L1 Regularization (LASSO) or Anchors.</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"><strong>Stability</strong></td>
+        <td style="text-align:left">Consistency</td>
+        <td style="text-align:left">To build user trust.</td>
+        <td style="text-align:left">Use exact methods (SHAP) over stochastic ones (LIME).</td>
+      </tr>
+    </tbody>
+  </table>
+  <hr>
+  <h3 id="6-exam-question-bank">6. Exam Question Bank</h3>
+  <p><strong>Q1 (Short - 2 Marks): Define &quot;Sparsity&quot; in the context of XAI evaluation.</strong></p>
+  <blockquote>
+    <p><strong>Ans:</strong> Sparsity refers to the property of an explanation relying on a small number of features. It
+      is a measure of simplicity; a sparse explanation is easier for humans to understand because it filters out
+      irrelevant noise.</p>
+  </blockquote>
+  <p><strong>Q2 (5 Marks): Explain the &quot;Stability&quot; problem with LIME and how we can measure it.</strong></p>
+  <blockquote>
+    <p><strong>Hint:</strong></p>
+    <ol>
+      <li><strong>Problem:</strong> LIME uses random perturbation (fake data generation). Running it twice on the same
+        instance can give different results.</li>
+      <li><strong>Measurement:</strong> Calculate the Local Lipschitz Constant. Take two very similar points and measure
+        the Euclidean distance between their explanation vectors. If the distance is large, stability is low.</li>
+    </ol>
+  </blockquote>
+  <p><strong>Q3 (10 Marks): Describe the &quot;Deletion Metric&quot; (or Area Under the Deletion Curve) for evaluating
+      Fidelity.</strong></p>
+  <blockquote>
+    <p><strong>Structure:</strong></p>
+    <ol>
+      <li><strong>Goal:</strong> To test if the features labeled &quot;Important&quot; are actually important.</li>
+      <li><strong>Procedure:</strong>
+        <ul>
+          <li>Order features by importance.</li>
+          <li>Remove them one by one.</li>
+          <li>Measure model accuracy at each step.</li>
+        </ul>
+      </li>
+      <li><strong>Result:</strong> A sharp drop implies High Fidelity.</li>
+      <li><strong>Diagram:</strong> Draw the steep vs. flat curve graph shown in the notes.</li>
+    </ol>
+  </blockquote>
+  <hr>
+  <h2 id="topic-4-xai-in-fairness-and-bias-mitigation">Topic 4: XAI in Fairness and Bias Mitigation</h2>
+  <hr>
+  <h3 id="1-introduction-the-black-box-of-discrimination">1. Introduction: The &quot;Black Box&quot; of Discrimination
+  </h3>
+  <p>Machine Learning models learn from history. If history is racist or sexist, the model will be too.</p>
+  <ul>
+    <li><strong>The Problem:</strong> In a Black Box model, bias is hidden. We might see high accuracy (90%), but not
+      realize that the 10% error rate is entirely concentrated on minority groups.</li>
+    <li><strong>The Role of XAI:</strong> XAI acts as a flashlight. It doesn&#39;t <em>fix</em> bias automatically, but
+      it <strong>reveals</strong> it so humans can fix it.</li>
+  </ul>
+  <hr>
+  <h3 id="2-types-of-bias-in-ai">2. Types of Bias in AI</h3>
+  <p>To mitigate bias, we must first identify it.</p>
+  <h4 id="a-data-bias-historical-bias-">A. Data Bias (Historical Bias)</h4>
+  <ul>
+    <li><strong>Definition:</strong> The training data reflects existing prejudices.</li>
+    <li><strong>Example:</strong> Amazon&#39;s hiring AI penalized resumes containing the word &quot;Women&#39;s Chess
+      Club&quot; because historically, most hired engineers were men.</li>
+  </ul>
+  <h4 id="b-proxy-bias-the-redlining-problem-">B. Proxy Bias (The &quot;Redlining&quot; Problem)</h4>
+  <ul>
+    <li><strong>Definition:</strong> Even if you remove sensitive attributes (like Race or Gender), the model finds
+      other features that <em>correlate</em> with them.</li>
+    <li><strong>Example:</strong> The model uses <strong>Zip Code</strong> to deny loans. Since housing is often
+      segregated, Zip Code becomes a &quot;Proxy&quot; for Race.</li>
+    <li><strong>XAI Detection:</strong> XAI reveals that &quot;Zip Code&quot; has an unusually high importance weight,
+      triggering an audit.</li>
+  </ul>
+  <h4 id="c-label-bias">C. Label Bias</h4>
+  <ul>
+    <li><strong>Definition:</strong> The target variable itself is biased.</li>
+    <li><strong>Example:</strong> Predicting &quot;Arrest Rate&quot; instead of &quot;Crime Rate.&quot; Minorities might
+      be arrested more often due to over-policing, even if they don&#39;t commit more crime.</li>
+  </ul>
+  <hr>
+  <h3 id="3-how-xai-detects-bias">3. How XAI Detects Bias</h3>
+  <p>XAI provides the evidence required to prove discrimination.</p>
+  <h4 id="method-1-feature-importance-global-detection-">Method 1: Feature Importance (Global Detection)</h4>
+  <p>We use SHAP or Global Permutation Importance to inspect the top features.</p>
+  <ul>
+    <li><strong>Check:</strong> Is <code>Gender</code>, <code>Race</code>, or <code>Religion</code> in the top 10
+      features?</li>
+    <li><strong>Action:</strong> If yes, the model is explicitly using protected attributes. This is illegal in many
+      sectors.</li>
+  </ul>
+  <h4 id="method-2-counterfactuals-individual-detection-">Method 2: Counterfactuals (Individual Detection)</h4>
+  <p>We generate counterfactuals for specific rejected individuals.</p>
+  <ul>
+    <li><strong>Scenario:</strong> A female applicant is rejected.</li>
+    <li><strong>Counterfactual Question:</strong> <em>&quot;What if this applicant were Male, keeping all other skills
+        identical?&quot;</em></li>
+    <li><strong>Result:</strong> If the prediction flips from &quot;Reject&quot; to &quot;Hire&quot;, we have proof of
+      <strong>Individual Discrimination</strong>.</li>
+  </ul>
+  <h4 id="method-3-subgroup-analysis-slicing-">Method 3: Subgroup Analysis (Slicing)</h4>
+  <p>We use XAI tools (like the What-If Tool) to compare performance across groups.</p>
+  <ul>
+    <li><strong>False Positive Rate Analysis:</strong> Does the model falsely accuse Group A twice as often as Group B?
+    </li>
+  </ul>
+  <hr>
+  <h3 id="4-visualizing-bias-detection">4. Visualizing Bias Detection</h3>
+  <p>[Image of Bias Detection Loop diagram]</p>
+  <svg width="100%" height="350" xmlns="http://www.w3.org/2000/svg"
+    style="background:#fff; border: 1px solid #ddd; border-radius: 8px;">
+    <text x="300" y="30" text-anchor="middle" font-weight="bold">The Bias Detection Loop</text>
+
+    <rect x="50" y="80" width="100" height="60" fill="#333" rx="5" />
+    <text x="100" y="115" text-anchor="middle" fill="#fff" font-weight="bold">Black Box AI</text>
+
+    <line x1="150" y1="110" x2="200" y2="110" stroke="#333" stroke-width="2" marker-end="url(#arrow)" />
+
+    <rect x="200" y="80" width="120" height="60" fill="#3498db" rx="5" />
+    <text x="260" y="115" text-anchor="middle" fill="#fff" font-weight="bold">XAI (SHAP)</text>
+
+    <line x1="320" y1="110" x2="370" y2="110" stroke="#333" stroke-width="2" marker-end="url(#arrow)" />
+
+    <rect x="370" y="60" width="180" height="100" fill="#fff3e0" stroke="#e65100" rx="5" />
+    <text x="460" y="85" text-anchor="middle" font-weight="bold" fill="#d35400">Insight Found!</text>
+    <text x="460" y="105" text-anchor="middle" font-size="10">&quot;Zip Code&quot; is #1 Feature.</text>
+    <text x="460" y="120" text-anchor="middle" font-size="10">(Proxy for Race)</text>
+    <text x="460" y="135" text-anchor="middle" font-size="10" font-weight="bold">Status: BIASED</text>
+
+    <path d="M 460,160 Q 460,250 100,250 L 100,140" fill="none" stroke="#c0392b" stroke-width="2" stroke-dasharray="5,5"
+      marker-end="url(#arrowRed)" />
+    <text x="280" y="240" text-anchor="middle" fill="#c0392b" font-weight="bold">Action: Retrain / Remove Feature</text>
+
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#333" />
+      </marker>
+      <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto"
+        markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#c0392b" />
+      </marker>
+    </defs>
+  </svg>
+
+  <hr>
+  <h3 id="5-mitigation-strategies-fixing-the-bias-">5. Mitigation Strategies (Fixing the Bias)</h3>
+  <p>Once XAI reveals the bias, we use these techniques to fix it:</p>
+  <ol>
+    <li><strong>Pre-processing (Fix Data):</strong>
+      <ul>
+        <li><em>Reweighing:</em> If &quot;Older People&quot; are under-represented, give their data points higher weight
+          during training.</li>
+        <li><em>Suppression:</em> Remove the biased feature (e.g., Zip Code) identified by XAI.</li>
+      </ul>
+    </li>
+    <li><strong>In-processing (Fix Model):</strong>
+      <ul>
+        <li><em>Regularization:</em> Add a penalty term to the Loss Function that punishes the model if it relies on
+          sensitive features.</li>
+        <li><em>Adversarial Debiasing:</em> Train two models. One predicts the outcome, the other tries to guess the
+          Race based on that outcome. If the second model succeeds, the first model is punished.</li>
+      </ul>
+    </li>
+    <li><strong>Post-processing (Fix Predictions):</strong>
+      <ul>
+        <li><em>Threshold Adjustment:</em> Use different acceptance thresholds for different groups to ensure
+          <strong>Equal Opportunity</strong>.</li>
+      </ul>
+    </li>
+  </ol>
+  <hr>
+  <h3 id="6-exam-question-bank">6. Exam Question Bank</h3>
+  <p><strong>Q1 (Short - 2 Marks): What is &quot;Proxy Bias&quot; in AI?</strong></p>
+  <blockquote>
+    <p><strong>Ans:</strong> Proxy bias occurs when a protected attribute (like race or gender) is removed from the
+      dataset, but the model learns to discriminate using a different feature (like Zip Code or School Name) that is
+      highly correlated with the protected attribute.</p>
+  </blockquote>
+  <p><strong>Q2 (5 Marks): How can Counterfactual Explanations be used to audit a model for fairness?</strong></p>
+  <blockquote>
+    <p><strong>Hint:</strong></p>
+    <ol>
+      <li>Select a rejected candidate from a minority group.</li>
+      <li>Generate a counterfactual by flipping <em>only</em> the protected attribute (e.g., change Gender from Female
+        to Male).</li>
+      <li>If the model prediction changes to &quot;Approve&quot; solely based on this flip, it proves the model is
+        biased against Females.</li>
+    </ol>
+  </blockquote>
+  <p><strong>Q3 (10 Marks): Discuss the workflow of using XAI for Fairness and Bias Mitigation.</strong></p>
+  <blockquote>
+    <p><strong>Structure:</strong></p>
+    <ol>
+      <li><strong>Detection:</strong> Use SHAP to check Global Feature Importance (Is Race important?).</li>
+      <li><strong>Audit:</strong> Use Slicing (What-If Tool) to check error rates across groups.</li>
+      <li><strong>Deep Dive:</strong> Use Counterfactuals to check individual cases.</li>
+      <li><strong>Mitigation:</strong> Once the &quot;Proxy Feature&quot; is found via XAI, remove or reweigh it.</li>
+      <li><strong>Re-Audit:</strong> Run XAI again to verify the bias is gone.</li>
+    </ol>
+  </blockquote>
+  <hr>
+  <h2 id="topic-5-challenges-and-future-directions-in-xai">Topic 5: Challenges and Future Directions in XAI</h2>
+  <hr>
+  <h3 id="1-introduction-the-road-ahead">1. Introduction: The Road Ahead</h3>
+  <p>We have learned about LIME, SHAP, and Grad-CAM. While powerful, they are not perfect.
+    The field of XAI is still in its infancy (most tools were invented after 2016).
+    We face three massive hurdles: <strong>Security, Causality, and Standardization.</strong></p>
+  <hr>
+  <h3 id="2-challenge-1-adversarial-attacks-on-xai-fooling-the-explanation-">2. Challenge 1: Adversarial Attacks on XAI
+    (&quot;Fooling the Explanation&quot;)</h3>
+  <p>This is the most dangerous technical challenge.</p>
+  <ul>
+    <li><strong>The Concept:</strong> Just as you can fool a CNN with an &quot;Adversarial Image&quot; (making a Panda
+      look like a Gibbon), you can <strong>fool the explanation tool</strong>.</li>
+    <li><strong>Scaffolding Attack:</strong> A malicious developer can build a biased model (e.g., racist) that
+      <em>detects</em> when it is being audited by SHAP or LIME.<ul>
+        <li><em>Normal use:</em> The model acts racist.</li>
+        <li><em>Audit use (Perturbed data):</em> The model detects the noise pattern of LIME, switches logic, and acts
+          fair.</li>
+      </ul>
+    </li>
+    <li><strong>Result:</strong> The XAI tool generates a &quot;Clean&quot; explanation for a &quot;Dirty&quot; model.
+    </li>
+  </ul>
+  <h4 id="visualizing-the-attack">Visualizing the Attack</h4>
+  <svg width="100%" height="300" xmlns="http://www.w3.org/2000/svg"
+    style="background:#fff; border: 1px solid #ddd; border-radius: 8px;">
+    <rect x="150" y="50" width="300" height="200" fill="#333" rx="10" />
+    <text x="300" y="80" text-anchor="middle" fill="#fff" font-weight="bold">Malicious AI (The Trap)</text>
+
+    <path d="M 250,120 L 350,120 L 300,180 Z" fill="#f1c40f" />
+    <text x="300" y="150" text-anchor="middle" font-size="10" font-weight="bold">Detector</text>
+
+    <line x1="50" y1="150" x2="150" y2="150" stroke="#333" stroke-width="2" />
+    <text x="100" y="140" text-anchor="middle">Real User</text>
+    <path d="M 300,180 L 200,230" stroke="#e74c3c" stroke-width="3" />
+    <text x="200" y="245" text-anchor="middle" fill="#e74c3c" font-weight="bold">Biased Logic</text>
+
+    <line x1="50" y1="150" x2="150" y2="150" stroke="#333" stroke-width="2" stroke-dasharray="5,5" />
+    <text x="100" y="165" text-anchor="middle" fill="#3498db">LIME/SHAP</text>
+    <path d="M 300,180 L 400,230" stroke="#2ecc71" stroke-width="3" />
+    <text x="400" y="245" text-anchor="middle" fill="#2ecc71" font-weight="bold">Fair Logic</text>
+
+    <text x="300" y="280" text-anchor="middle" font-style="italic">&quot;The model hides its bias when
+      watched&quot;</text>
+  </svg>
+
+  <hr>
+  <h3 id="3-challenge-2-correlation-vs-causation">3. Challenge 2: Correlation vs. Causation</h3>
+  <p>Current XAI tools (SHAP/LIME) are <strong>Correlational</strong>.</p>
+  <ul>
+    <li><em>Scenario:</em> A model predicts &quot;High Crime&quot; based on &quot;High Ice Cream Sales.&quot; (Both
+      happen in summer).</li>
+    <li><em>SHAP:</em> Gives &quot;Ice Cream&quot; a high importance score.</li>
+    <li><em>Human:</em> Thinks &quot;If I ban Ice Cream, crime will drop.&quot; (Wrong).</li>
+    <li><strong>The Future:</strong> <strong>Causal AI</strong>. We need models that understand <em>cause and
+        effect</em>, not just statistical patterns. (Using Structural Causal Models - SCMs).</li>
+  </ul>
+  <hr>
+  <h3 id="4-challenge-3-the-human-bottleneck">4. Challenge 3: The &quot;Human&quot; Bottleneck</h3>
+  <ul>
+    <li><strong>Information Overload:</strong> Explaining a decision using 50 features is mathematically correct but
+      cognitively useless. Humans can only handle 5-7 chunks of info.</li>
+    <li><strong>Confirmation Bias:</strong> Users tend to accept explanations that confirm what they already believe and
+      reject those that don&#39;t, even if the AI is right.</li>
+    <li><strong>The Future:</strong> <strong>Interactive/Conversational XAI</strong>. Instead of a static chart, the AI
+      should talk to you: <em>&quot;I rejected the loan. Would you like to know about your debt or income?&quot;</em>
+    </li>
+  </ul>
+  <hr>
+  <h3 id="5-future-direction-neuro-symbolic-ai">5. Future Direction: Neuro-Symbolic AI</h3>
+  <p>This is the biggest trend in AI research (Hybrid AI).</p>
+  <ul>
+    <li><strong>Deep Learning (System 1):</strong> Fast, intuitive, handles images well, but unexplainable. (The
+      &quot;Gut Feeling&quot;).</li>
+    <li><strong>Symbolic Logic (System 2):</strong> Slow, logical, rule-based, fully explainable. (The &quot;Math
+      Brain&quot;).</li>
+    <li><strong>Neuro-Symbolic:</strong> Combining both.<ul>
+        <li><em>Example:</em> A Neural Net identifies objects (&quot;Stop Sign&quot;, &quot;Car&quot;). A Symbolic Logic
+          layer makes the decision (&quot;IF Stop Sign AND Car THEN Stop&quot;).</li>
+        <li><em>Result:</em> The decision logic is transparent, even if the perception is opaque.</li>
+      </ul>
+    </li>
+  </ul>
+  <hr>
+  <h3 id="6-future-direction-standardization-and-regulation">6. Future Direction: Standardization and Regulation</h3>
+  <p>Currently, &quot;Explainability&quot; is vague.</p>
+  <ul>
+    <li><strong>The Future:</strong> ISO Standards for XAI.<ul>
+        <li>Just as we have safety ratings for cars (5-star crash test), we will have <strong>&quot;Explainability
+            Ratings&quot;</strong> for AI.</li>
+        <li><em>Metric:</em> &quot;This model has a Fidelity Score of 98% and Stability of 95%.&quot;</li>
+      </ul>
+    </li>
+  </ul>
+  <hr>
+  <h3 id="7-exam-question-bank-course-conclusion-">7. Exam Question Bank (Course Conclusion)</h3>
+  <p><strong>Q1 (10 Marks - The Big Picture): &quot;Explainable AI is a moving target.&quot; Discuss the technical and
+      ethical challenges that prevent XAI from being fully trusted today.</strong></p>
+  <blockquote>
+    <p><strong>Structure:</strong></p>
+    <ol>
+      <li><strong>Technical Challenge:</strong> Adversarial Attacks (Scaffolding). We can&#39;t trust the explanation
+        isn&#39;t faked.</li>
+      <li><strong>Mathematical Challenge:</strong> Correlation is not Causation. Misleading advice.</li>
+      <li><strong>Human Challenge:</strong> Automation Bias. Users stop thinking and blindly follow the &quot;green
+        checkmark.&quot;</li>
+      <li><strong>Ethical Challenge:</strong> Privacy. Sometimes an explanation reveals too much about the training data
+        (Membership Inference Attack).</li>
+    </ol>
+  </blockquote>
+  <p><strong>Q2 (5 Marks): What is Neuro-Symbolic AI and how does it solve the Black Box problem?</strong></p>
+  <blockquote>
+    <p><strong>Hint:</strong></p>
+    <ul>
+      <li>It bridges Neural Networks (Black Box) and Symbolic AI (White Box).</li>
+      <li>Neural Net handles perception (Vision/Audio).</li>
+      <li>Symbolic Logic handles reasoning (Rules).</li>
+      <li>Since the <em>reasoning</em> step is rule-based, the final decision is fully explainable.</li>
+    </ul>
+  </blockquote>
+  <hr>
+</body>
+
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explainable AI - Course Home</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --bg: #f4f7f6;
+            --card-bg: #ffffff;
+            --text: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        header h1 { margin: 0; font-size: 2.5rem; }
+        header p { margin: 10px 0 0; opacity: 0.8; font-size: 1.1rem; }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            overflow: hidden;
+            border-top: 5px solid var(--accent);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .card-header h2 {
+            margin: 0;
+            font-size: 1.4rem;
+            color: var(--primary);
+        }
+
+        .card-header a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .topic-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .topic-list li {
+            margin-bottom: 12px;
+            padding-left: 15px;
+            border-left: 3px solid #eee;
+            transition: border-color 0.2s;
+        }
+
+        .topic-list li:hover {
+            border-left: 3px solid var(--accent);
+        }
+
+        .topic-list a {
+            text-decoration: none;
+            color: #555;
+            font-size: 0.95rem;
+            display: block;
+            transition: color 0.2s;
+        }
+
+        .topic-list a:hover {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        /* Button to open full unit */
+        .btn-unit {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            text-align: center;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 15px;
+            border-radius: 0 0 5px 5px; /* Rounded corners only at bottom */
+        }
+        
+        .btn-unit:hover {
+            background: var(--accent);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            color: #777;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Explainable AI (XAI)</h1>
+    <p>Course Syllabus & Notes Hub</p>
+</header>
+
+<div class="container">
+    <div class="grid">
+
+        <div class="card">
+            <div class="card-header">
+                <h2><a href="unit 1.html">Unit I: Introduction to Explainable AI</a></h2>
+            </div>
+            <div class="card-body">
+                <ul class="topic-list">
+                    <li><a href="unit 1.html#topic-1-the-need-for-explainability-in-ai">Topic 1:Need for Explainability</a></li>
+                    <li><a href="unit 1.html#topic-2-black-box-vs-white-box-models">Topic 2:Black-box vs. White-box</a></li>
+                    <li><a href="unit 1.html#topic-3-trust-fairness-and-accountability-in-ai">Topic 3:Trust, Fairness & Accountability</a></li>
+                    <li><a href="unit 1.html#topic-4-stakeholders-in-xai">Topic 4:Stakeholders in XAI</a></li>
+                    <li><a href="unit 1.html#topic-5-legal-and-ethical-motivations-gdpr-ai-act-">Topic 5:Legal (GDPR) & Ethical Issues</a></li>
+                    <li><a href="unit 1.html#topic-6-interpretability-vs-accuracy-trade-off">Topic 6:Accuracy vs. Interpretability</a></li>
+                    <li><a href="unit 1.html#topic-7-overview-of-xai-tools-and-frameworks">Topic 7:Tools Overview (LIME, SHAP)</a></li>
+                </ul>
+            </div>
+            <a href="unit 1.html" class="btn-unit">Open Full Unit I</a>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2><a href="unit 2.html">Unit II: Interpretable Models and Intrinsic XAI</a></h2>
+            </div>
+            <div class="card-body">
+                <ul class="topic-list">
+                    <li><a href="unit 2.html#topic-1-white-box-models">Topic 1: White-box models (Linear)</a></li>
+                    <li><a href="unit 2.html#topic-2-decision-trees">Topic 2: Decision Trees</a></li>
+                    <li><a href="unit 2.html#topic-3-rule-based-learners">Topic 3: Rule-based Learners</a></li>
+                    <li><a href="unit 2.html#topic-4-feature-importance-in-interpretable-models">Topic 4: Feature importance in interpretable models</a></li>
+                    <li><a href="unit 2.html#topic-5-global-vs-local-interpretability-regularization">Topic 5: Global vs Local interpretability &amp; Regularization</a></li>
+                    <li><a href="unit 2.html#topic-5-part-b-transparent-model-design-regularization">Topic 5 (Part B): Transparent Model Design &amp; Regularization</a></li>
+                    <li><a href="unit 2.html#topic-6-advantages-and-limitations-of-inherently-interpretable-models">Topic 6: Advantages and Limitations of Inherently Interpretable Models</a></li>
+                </ul>
+            </div>
+            <a href="unit 2.html" class="btn-unit">Open Full Unit II</a>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2><a href="unit 3.html">Unit III: Post-hoc Model-Agnostic Explanation Techniques</a></h2>
+            </div>
+            <div class="card-body">
+                <ul class="topic-list">
+                    <li><a href="unit 3.html#topic-1-post-hoc-model-agnostic-explanations-lime">LIME (Local Interpretable Model-agnostic Explanations)</a></li>
+                    <li><a href="unit 3.html#topic-2-shap-shapley-additive-explanations-">SHAP (SHapley Additive exPlanations)</a></li>
+                    <li><a href="unit 3.html#topic-3-partial-dependence-plots-pdp-">Partial Dependence Plots (PDP)</a></li>
+                    <li><a href="unit 3.html#topic-4-individual-conditional-expectation-ice-">Individual Conditional Expectation (ICE) Plots</a></li>
+                    <li><a href="unit 3.html#topic-5-anchors-high-precision-rules-">Anchors</a></li>
+                    <li><a href="unit 3.html#topic-6-counterfactual-explanations">Counterfactual explanations</a></li>
+                    <li><a href="unit 3.html#topic-7-visualization-and-interpretation-techniques">Visualization and interpretation techniques</a></li>
+                </ul>
+            </div>
+            <a href="unit 3.html" class="btn-unit">Open Full Unit III</a>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2><a href="unit 4.html">Unit IV: Explanation Techniques for Deep Learning</a></h2>
+            </div>
+            <div class="card-body">
+                <ul class="topic-list">
+                    <li><a href="unit 4.html#topic-1-gradient-based-methods-saliency-maps-">Topic 1: Saliency Maps</a></li>
+                    <li><a href="unit 4.html#topic-2-grad-cam-gradient-weighted-class-activation-mapping-">Topic 2: Grad-CAM</a></li>
+                    <li><a href="unit 4.html#topic-3-integrated-gradients">Topic 3: Integrated Gradients</a></li>
+                    <li><a href="unit 4.html#topic-4-layer-wise-relevance-propagation-lrp-">Topic 4: Layer-wise relevance propagation (LRP)</a></li>
+                    <li><a href="unit 4.html#topic-5-attention-mechanisms-interpretability">Topic 5: Attention mechanisms and interpretability</a></li>
+                    <li><a href="unit 4.html#topic-6-surrogate-models-for-cnns-rnns-llm-challenges">Topic 6: Surrogate models for CNNs and RNNs</a></li>
+                    <li><a href="unit 4.html#topic-7-explanation-challenges-in-large-language-models-llms-">Topic 7: Explanation challenges in large language models (LLMs)</a></li>
+                    <li><a href="unit 4.html#topic-8-visualization-tools-for-neural-networks">Topic 8: Visualization tools for neural networks</a></li>
+                </ul>
+            </div>
+            <a href="unit 4.html" class="btn-unit">Open Full Unit IV</a>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2><a href="unit 5.html">Unit V: Applications, Evaluation, and Challenges in XAI</a></h2>
+            </div>
+            <div class="card-body">
+                <ul class="topic-list">
+                    <li><a href="unit 5.html#topic-1-xai-in-healthcare-finance-autonomous-systems">Topic 1: XAI in healthcare, finance, and autonomous systems</a></li>
+                    <li><a href="unit 5.html#topic-2-human-centric-evaluations-of-explanations">Topic 2: Human-centric evaluations of explanations (fidelity, comprehensibility, usability)</a></li>
+                    <li><a href="unit 5.html#topic-3-quantitative-metrics-for-explainability">Topic 3: Quantitative metrics for explainability</a></li>
+                    <li><a href="unit 5.html#topic-4-xai-in-fairness-and-bias-mitigation">Topic 4: XAI in Fairness & Bias mitigation</a></li>
+                    <li><a href="unit 5.html#topic-5-challenges-and-future-directions-in-xai">Topic 5: Challenges and future directions in explainable and trustworthy AI</a></li>
+                </ul>
+            </div>
+            <a href="unit 5.html" class="btn-unit">Open Full Unit V</a>
+        </div>
+
+    </div>
+</div>
+
+<footer>
+    <p>Professor AI - Explainable AI Course Notes</p>
+</footer>
+
+</body>
+</html>
